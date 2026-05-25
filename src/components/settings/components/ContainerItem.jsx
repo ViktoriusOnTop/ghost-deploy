@@ -20,6 +20,9 @@ const SettingsContainerItem = ({
   placeholder,
   inputType,
   dropdownDirection,
+  min,
+  max,
+  step,
 }) => {
   const { options } = useOptions();
   const hasDisabledAction = disabled && typeof disabledAction === 'function';
@@ -66,6 +69,17 @@ const SettingsContainerItem = ({
             />
           )}
           {type === 'button' && <Button action={action} value={value} />}
+          {type === 'slider' && (
+            <input
+              type="range"
+              min={min}
+              max={max}
+              step={step}
+              value={value}
+              onChange={(e) => action(Number(e.target.value))}
+              className="elastic-slider w-24 md:w-32"
+            />
+          )}
         </div>
       )}
     </div>

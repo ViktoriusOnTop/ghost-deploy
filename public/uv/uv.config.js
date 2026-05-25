@@ -46,8 +46,57 @@ self.__uv$config = {
             html: `
             <script>
                 (function() {
-                    if (window === window.parent) return;
                     let shortcuts = ["Alt+T", "Alt+W", "Alt+Shift+T", "Alt+D", "Alt+R", "F5", "F12", "F11", "Alt+L"];
+                    const postState = () => {
+                        try {
+                            window.top.postMessage({
+                                type: 'ghost-location-change',
+                                url: window.location.href,
+                                title: document.title || ''
+                            }, '*');
+                        } catch {}
+                    };
+                    const postTitle = () => {
+                        try {
+                            window.top.postMessage({
+                                type: 'ghost-title-change',
+                                title: document.title || ''
+                            }, '*');
+                        } catch {}
+                    };
+                    const hookHistory = () => {
+                        try {
+                            const originalPushState = history.pushState.bind(history);
+                            const originalReplaceState = history.replaceState.bind(history);
+                            history.pushState = function (...args) {
+                                const result = originalPushState(...args);
+                                postState();
+                                return result;
+                            };
+                            history.replaceState = function (...args) {
+                                const result = originalReplaceState(...args);
+                                postState();
+                                return result;
+                            };
+                        } catch {}
+                    };
+                    const observeTitle = () => {
+                        try {
+                            const observer = new MutationObserver(() => postTitle());
+                            const titleNode = document.querySelector('title');
+                            if (titleNode) {
+                                observer.observe(titleNode, { childList: true, characterData: true, subtree: true });
+                            } else if (document.head) {
+                                observer.observe(document.head, { childList: true, subtree: true });
+                            }
+                        } catch {}
+                    };
+                    hookHistory();
+                    observeTitle();
+                    window.addEventListener('popstate', postState);
+                    window.addEventListener('hashchange', postState);
+                    window.addEventListener('pageshow', postState);
+                    postState();
                     window.addEventListener('message', (e) => {
                         if (e.data && e.data.type === 'ghost-update-shortcuts') shortcuts = e.data.shortcuts;
                     });

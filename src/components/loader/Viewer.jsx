@@ -66,6 +66,103 @@ const isLikelyDownloadHref = (value) => {
   return DOWNLOAD_HINT_RE.test(href);
 };
 
+  const syncFrameState = (tab, iframe, force = false) => {
+    if (!tab || !iframe?.contentWindow) return;
+    try {
+      const cw = iframe.contentWindow;
+      const curURL = cw.location.href;
+      const curTTL = cw.document.title;
+
+      if (curURL && curURL !== 'about:blank' && (force || curURL !== prevURL.current[tab.id] && curURL !== tab.url)) {
+        prevURL.current[tab.id] = curURL;
+        setIframeUrl(tab.id, curURL);
+      }
+
+      if (curTTL && (force || curTTL !== prevTitle.current[tab.id] && curTTL !== tab.title)) {
+        prevTitle.current[tab.id] = curTTL;
+        updateTitle(tab.id, curTTL);
+      }
+    } catch { }
+  };
+
+  const installFrameBridge = (tab, iframe) => {
+    if (!tab || !iframe?.contentWindow) return;
+
+    try {
+      const cw = iframe.contentWindow;
+      if (!cw.__ghostUrlBridgeHooked) {
+        cw.__ghostUrlBridgeHooked = true;
+
+        const notifyFrameState = () => syncFrameState(tab, iframe, true);
+        const originalPushState = cw.history.pushState.bind(cw.history);
+        const originalReplaceState = cw.history.replaceState.bind(cw.history);
+
+        cw.history.pushState = function (...args) {
+          const result = originalPushState(...args);
+          notifyFrameState();
+          return result;
+        };
+
+        cw.history.replaceState = function (...args) {
+          const result = originalReplaceState(...args);
+          notifyFrameState();
+          return result;
+        };
+
+        const onStateChange = () => notifyFrameState();
+        cw.addEventListener('popstate', onStateChange);
+        cw.addEventListener('hashchange', onStateChange);
+        cw.addEventListener('pageshow', onStateChange);
+
+        const titleObserver = new cw.MutationObserver(onStateChange);
+        const titleNode = cw.document.querySelector('title');
+        if (titleNode) {
+          titleObserver.observe(titleNode, { childList: true, characterData: true, subtree: true });
+        } else if (cw.document.head) {
+          titleObserver.observe(cw.document.head, { childList: true, subtree: true });
+        }
+        cw.__ghostTitleObserver = titleObserver;
+      }
+
+      const shortcutsMap = getEffectiveShortcuts(options);
+      const activeCombos = Object.entries(shortcutsMap)
+        .filter(([, cfg]) => cfg?.enabled !== false)
+        .map(([, cfg]) => cfg.key);
+      cw.__ghostActiveCombos = activeCombos;
+      cw.postMessage({ type: 'ghost-update-shortcuts', shortcuts: activeCombos }, '*');
+
+      if (!cw.__ghostShortcutHooked) {
+        cw.__ghostShortcutHooked = true;
+
+        const stealShortcut = (e) => {
+          const combo = eventToShortcut(e);
+          const hasModifier = e.ctrlKey || e.altKey || e.metaKey;
+          if (hasModifier || cw.__ghostActiveCombos?.includes(combo) || combo === 'F11' || combo === 'F12' || combo === 'F5') {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation?.();
+
+            const synth = new KeyboardEvent('keydown', {
+              key: e.key,
+              altKey: e.altKey,
+              ctrlKey: e.ctrlKey,
+              shiftKey: e.shiftKey,
+              metaKey: e.metaKey,
+              bubbles: true,
+              cancelable: true
+            });
+            window.top.dispatchEvent(synth);
+          }
+        };
+
+        cw.addEventListener('keydown', stealShortcut, { capture: true });
+        cw.document.addEventListener('keydown', stealShortcut, { capture: true });
+      }
+
+      syncFrameState(tab, iframe, true);
+    } catch { }
+  };
+
 const Viewer = ({ zoom }) => {
   const tabs = loaderStore((state) => state.tabs);
   const updateUrl = loaderStore((state) => state.updateUrl);
@@ -376,6 +473,18 @@ const Viewer = ({ zoom }) => {
     if (value.startsWith('tabs://') || value.startsWith('data:') || value.startsWith('blob:') || value.startsWith('about:')) {
       return value;
     }
+
+    if (options.torRouting) {
+      // Decode the proxy URL to get the actual target URL
+      let targetUrl = value;
+      if (value.includes('/uv/service/') || value.includes('/scramjet/')) {
+         try {
+           targetUrl = process(value, true, options.prType || 'auto', options.engine || null);
+         } catch { }
+      }
+      return targetUrl; // We will handle fetching this in the Tor useEffect
+    }
+
     if (value.includes('/uv/service/') || value.includes('/scramjet/')) {
       try {
         const decoded = process(value, true, options.prType || 'auto', options.engine || null);
@@ -387,8 +496,8 @@ const Viewer = ({ zoom }) => {
     if (value.startsWith('ghost://')) {
       const route = value.toLowerCase().replace(/^ghost:\/\//, '').replace(/^\/+/, '').split(/[?#]/)[0];
       const aliasTargets = {
-        musicplayer: 'https://music.anonymoose.workers.dev',
-        monochrome: 'https://music.anonymoose.workers.dev',
+        musicplayer: 'https://monochrome.tf',
+        monochrome: 'https://monochrome.tf',
         duckai: 'https://duck.ai',
         live: 'https://thetvapp.to',
         movies: 'https://www.cineby.sc',
@@ -396,6 +505,7 @@ const Viewer = ({ zoom }) => {
         browselol: 'https://browser.lol/create',
       };
       if (aliasTargets[route]) {
+        if (route === 'musicplayer' || route === 'monochrome') return aliasTargets[route];
         return process(aliasTargets[route], false, options.prType || 'auto', options.engine || null);
       }
       return process(value, false, options.prType || 'auto', options.engine || null);
@@ -404,6 +514,9 @@ const Viewer = ({ zoom }) => {
       const parsed = new URL(value, location.origin);
       if (parsed.origin === location.origin) {
         return parsed.toString();
+      }
+      if (value === 'https://monochrome.tf' || value.startsWith('https://monochrome.tf/')) {
+        return value;
       }
     } catch { }
     return process(value, false, options.prType || 'auto', options.engine || null);
@@ -497,186 +610,122 @@ const Viewer = ({ zoom }) => {
 
   useEffect(() => {
     const listeners = [];
+
     tabs.forEach((tab) => {
       if (isNewTabLikeUrl(tab.url)) return;
       const iframe = frameRefs.current[tab.id];
       if (!iframe) return;
+
       const handleLoad = () => {
         setLoading(tab.id, false);
         applyProtection(tab, iframe);
+        installFrameBridge(tab, iframe);
+        syncFrameState(tab, iframe, true);
         window.dispatchEvent(
           new CustomEvent('ghost-frame-loaded', {
             detail: { tabId: tab.id, frame: iframe },
           }),
         );
+
         try {
           const d = iframe.contentWindow?.document;
           if (d?.getElementById('errorTrace-wrapper') || d?.getElementById('fetchedURL')) {
             const errorText = d.body?.innerText || '';
             const rawUrl = getFrameUrl(tab.url);
-            
-            // Auto-fallback to UV for Libcurl SSL errors
+
             if (rawUrl.includes('/scramjet/') && (errorText.includes('SSL connect error') || errorText.includes('code 35') || errorText.includes('code 60') || errorText.includes('tls handshake eof'))) {
-               const targetParts = rawUrl.split('/scramjet/');
-               if (targetParts.length > 1) {
-                  try {
-                    const targetUrl = decodeURIComponent(targetParts[1]);
-                    const host = new URL(targetUrl).hostname.replace(/^www\./i, '').toLowerCase();
-                    const stored = JSON.parse(localStorage.getItem('ghostForceUvHosts') || '[]');
-                    if (!stored.includes(host)) {
-                       stored.push(host);
-                       localStorage.setItem('ghostForceUvHosts', JSON.stringify(stored));
-                       console.log(`[Viewer] Auto-fallback to UV activated for host: ${host}`);
-                       
-                       if (errorRetries.current[tab.id]) {
-                         clearTimeout(errorRetries.current[tab.id].timer);
-                         delete errorRetries.current[tab.id];
-                       }
-                       
-                       iframe.contentWindow.location.replace(process(targetUrl, false, options.prType || 'auto', options.engine || null));
-                       return;
+              const targetParts = rawUrl.split('/scramjet/');
+              if (targetParts.length > 1) {
+                try {
+                  const targetUrl = decodeURIComponent(targetParts[1]);
+                  const host = new URL(targetUrl).hostname.replace(/^www\./i, '').toLowerCase();
+                  const stored = JSON.parse(localStorage.getItem('ghostForceUvHosts') || '[]');
+                  if (!stored.includes(host)) {
+                    stored.push(host);
+                    localStorage.setItem('ghostForceUvHosts', JSON.stringify(stored));
+                    console.log(`[Viewer] Auto-fallback to UV activated for host: ${host}`);
+
+                    if (errorRetries.current[tab.id]) {
+                      clearTimeout(errorRetries.current[tab.id].timer);
+                      delete errorRetries.current[tab.id];
                     }
-                  } catch {}
-               }
+
+                    iframe.contentWindow.location.replace(process(targetUrl, false, options.prType || 'auto', options.engine || null));
+                    return;
+                  }
+                } catch { }
+              }
             }
-            
-            // Proxy error page — schedule a rate-limited retry
+
             scheduleErrorRetry(tab.id, iframe, rawUrl);
-          } else {
-            // Successful load — reset retry counter for this tab
-            if (errorRetries.current[tab.id]) {
-              clearTimeout(errorRetries.current[tab.id].timer);
-              delete errorRetries.current[tab.id];
-            }
+          } else if (errorRetries.current[tab.id]) {
+            clearTimeout(errorRetries.current[tab.id].timer);
+            delete errorRetries.current[tab.id];
           }
         } catch { }
       };
-      const checkState = () => {
-        try {
-          const curURL = iframe.contentWindow.location.href;
-          const curTTL = iframe.contentWindow.document.title;
-          if (curURL === 'about:blank') return;
-          if (curURL !== prevURL.current[tab.id] && curURL !== tab.url) {
-            prevURL.current[tab.id] = curURL;
-            setIframeUrl(tab.id, curURL);
-          }
-          if (curTTL && curTTL !== prevTitle.current[tab.id] && curTTL !== tab.title) {
-            prevTitle.current[tab.id] = curTTL;
-            updateTitle(tab.id, curTTL);
-          }
-        } catch (e) { }
-      };
+
       iframe.addEventListener('load', handleLoad);
-      iframe.addEventListener('load', checkState);
-      listeners.push({ iframe, handleLoad, checkState, tabId: tab.id });
+      listeners.push({ iframe, handleLoad });
     });
-    /* Single high-frequency poll for URL/title sync + error detection (one interval, not two) */
+
     const interval = setInterval(() => {
       const currentTabs = loaderStore.getState().tabs;
-      currentTabs.forEach((tab) => {
-        if (isNewTabLikeUrl(tab.url)) return;
-        const iframe = frameRefs.current[tab.id];
-        if (!iframe) return;
-        applyProtection(tab, iframe);
-        try {
-          const curURL = iframe.contentWindow.location.href;
-          const curTTL = iframe.contentWindow.document.title;
-          if (curURL === 'about:blank') return;
+      const activeTab = currentTabs.find((tab) => tab.active);
+      if (!activeTab || isNewTabLikeUrl(activeTab.url)) return;
 
-          const cw = iframe.contentWindow;
-          if (cw) {
-            const shortcutsMap = getEffectiveShortcuts(options);
-            const activeCombos = Object.entries(shortcutsMap)
-              .filter(([, cfg]) => cfg?.enabled !== false)
-              .map(([id, cfg]) => cfg.key);
-            
-            cw.__ghostActiveCombos = activeCombos;
-            cw.postMessage({ type: 'ghost-update-shortcuts', shortcuts: activeCombos }, '*');
+      const iframe = frameRefs.current[activeTab.id];
+      if (!iframe) return;
 
-            if (!cw.__ghostShortcutHooked) {
-              cw.__ghostShortcutHooked = true;
+      applyProtection(activeTab, iframe);
 
-              cw.addEventListener('keydown', (e) => {
-                const combo = eventToShortcut(e);
+      try {
+        syncFrameState(activeTab, iframe);
+        const d = iframe.contentWindow?.document;
+        const errorText = d?.body?.innerText || '';
+        const isErrorPage = d?.getElementById('errorTrace-wrapper') || errorText.includes('SSL connect error') || errorText.includes('code 35') || errorText.includes('code 60') || errorText.includes('tls handshake eof');
 
-                if (cw.__ghostActiveCombos?.includes(combo) || combo === 'F11' || combo === 'F12' || combo === 'F5') {
-                  e.preventDefault();
-                  e.stopPropagation();
+        if (isErrorPage) {
+          const rawUrl = getFrameUrl(activeTab.url);
 
-                  const synth = new KeyboardEvent('keydown', {
-                    key: e.key,
-                    altKey: e.altKey,
-                    ctrlKey: e.ctrlKey,
-                    shiftKey: e.shiftKey,
-                    metaKey: e.metaKey,
-                    bubbles: true,
-                    cancelable: true
-                  });
-                  window.top.dispatchEvent(synth);
+          if (rawUrl.includes('/scramjet/') && (errorText.includes('SSL connect error') || errorText.includes('code 35') || errorText.includes('code 60') || errorText.includes('tls handshake eof'))) {
+            const targetParts = rawUrl.split('/scramjet/');
+            if (targetParts.length > 1) {
+              try {
+                const targetUrl = decodeURIComponent(targetParts[1]);
+                const host = new URL(targetUrl).hostname.replace(/^www\./i, '').toLowerCase();
+                const stored = JSON.parse(localStorage.getItem('ghostForceUvHosts') || '[]');
+                if (!stored.includes(host)) {
+                  stored.push(host);
+                  localStorage.setItem('ghostForceUvHosts', JSON.stringify(stored));
+                  console.log(`[Viewer] Auto-fallback to UV activated for host: ${host}`);
+
+                  if (errorRetries.current[activeTab.id]) {
+                    clearTimeout(errorRetries.current[activeTab.id].timer);
+                    delete errorRetries.current[activeTab.id];
+                  }
+
+                  iframe.contentWindow.location.replace(process(targetUrl, false, options.prType || 'auto', options.engine || null));
+                  return;
                 }
-              }, { capture: true });
+              } catch { }
             }
           }
 
-          // Check for proxy error page — rate-limited retry
-          const d = iframe.contentWindow?.document;
-          const errorText = d?.body?.innerText || '';
-          const isErrorPage = d?.getElementById('errorTrace-wrapper') || errorText.includes('SSL connect error') || errorText.includes('code 35') || errorText.includes('code 60') || errorText.includes('tls handshake eof');
-
-          if (isErrorPage) {
-            const rawUrl = getFrameUrl(tab.url);
-            
-            // Auto-fallback to UV for Libcurl/Epoxy SSL errors
-            if (rawUrl.includes('/scramjet/') && (errorText.includes('SSL connect error') || errorText.includes('code 35') || errorText.includes('code 60') || errorText.includes('tls handshake eof'))) {
-               const targetParts = rawUrl.split('/scramjet/');
-               if (targetParts.length > 1) {
-                  try {
-                    const targetUrl = decodeURIComponent(targetParts[1]);
-                    const host = new URL(targetUrl).hostname.replace(/^www\./i, '').toLowerCase();
-                    const stored = JSON.parse(localStorage.getItem('ghostForceUvHosts') || '[]');
-                    if (!stored.includes(host)) {
-                       stored.push(host);
-                       localStorage.setItem('ghostForceUvHosts', JSON.stringify(stored));
-                       
-                       if (errorRetries.current[tab.id]) {
-                         clearTimeout(errorRetries.current[tab.id].timer);
-                         delete errorRetries.current[tab.id];
-                       }
-                       
-                       // Force 'auto' prType to ensure shouldForceUvRoute applies, then update React state AND iframe DOM
-                       const fallbackUrl = process(targetUrl, false, 'auto', options.engine || null);
-                       setIframeUrl(tab.id, fallbackUrl);
-                       iframe.src = fallbackUrl;
-                       return;
-                    }
-                  } catch {}
-               }
-            }
-            
-            scheduleErrorRetry(tab.id, iframe, rawUrl);
-            return;
-          }
-
-          if (curURL !== prevURL.current[tab.id] && curURL !== tab.url) {
-            prevURL.current[tab.id] = curURL;
-            setIframeUrl(tab.id, curURL);
-          }
-          if (curTTL && curTTL !== prevTitle.current[tab.id] && curTTL !== tab.title) {
-            prevTitle.current[tab.id] = curTTL;
-            updateTitle(tab.id, curTTL);
-          }
-        } catch (e) { }
-      });
-    }, 220);
+          scheduleErrorRetry(activeTab.id, iframe, rawUrl);
+        } else if (errorRetries.current[activeTab.id]) {
+          clearTimeout(errorRetries.current[activeTab.id].timer);
+          delete errorRetries.current[activeTab.id];
+        }
+      } catch { }
+    }, 300);
 
     return () => {
-      listeners.forEach(({ iframe, handleLoad, checkState }) => {
+      listeners.forEach(({ iframe, handleLoad }) => {
         iframe.removeEventListener('load', handleLoad);
-        iframe.removeEventListener('load', checkState);
       });
       clearInterval(interval);
-      // Clean up pending retry timers
-      Object.values(errorRetries.current).forEach((e) => clearTimeout(e.timer));
+      Object.values(errorRetries.current).forEach((entry) => clearTimeout(entry.timer));
     };
   }, [tabs, setLoading, updateTitle, setIframeUrl, options.adBlockDefault, options.popupBlockDefault, options.downloadBlockDefault, options.prType, options.engine, policyTick]);
 
@@ -747,7 +796,7 @@ const Viewer = ({ zoom }) => {
             )}
             {/* if not static, show frame. otherwise if wisp is found (and is static) show iframe,
             otherwise display error msg */}
-            {!isStaticBuild ? (
+            {(!isStaticBuild || wispStatus) ? (
               <iframe
                 ref={(el) => (frameRefs.current[id] = el)}
                 src={getFrameUrl(url)}

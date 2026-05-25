@@ -329,24 +329,12 @@ const NewTab = ({ id, updateFn }) => {
         };
       }
 
-      if (source === 'ipapi') {
+      if (source === 'freeipapi') {
         return {
-          timezone: String(payload.timezone || ''),
+          timezone: String(payload.timeZone || ''),
           latitude: Number(payload.latitude),
           longitude: Number(payload.longitude),
-          city: String(payload.city || ''),
-        };
-      }
-
-      if (source === 'ipwho') {
-        const zone = typeof payload.timezone === 'string'
-          ? payload.timezone
-          : payload?.timezone?.id || '';
-        return {
-          timezone: String(zone || ''),
-          latitude: Number(payload.latitude),
-          longitude: Number(payload.longitude),
-          city: String(payload.city || ''),
+          city: String(payload.cityName || ''),
         };
       }
 
@@ -378,8 +366,7 @@ const NewTab = ({ id, updateFn }) => {
     const fetchIpMeta = async () => {
       const providers = [
         { url: '/api/ip/meta', source: 'proxy' },
-        { url: 'https://ipwho.is/', source: 'ipwho' },
-        { url: 'https://ipapi.co/json/', source: 'ipapi' },
+        { url: 'https://freeipapi.com/api/json', source: 'freeipapi' },
         { url: 'https://ipinfo.io/json', source: 'ipinfo' },
       ];
 
@@ -636,15 +623,16 @@ const NewTab = ({ id, updateFn }) => {
         <div
           className={clsx(
             'pointer-events-auto rounded-2xl border backdrop-blur-md overflow-hidden transition-[width,box-shadow,transform,background-color,padding] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
-            infoCardOpen
+            options.magicPill && infoCardOpen
               ? 'w-[min(24rem,94vw)] px-4 py-3 shadow-[0_14px_34px_rgba(0,0,0,0.24)]'
-              : 'py-1 shadow-[0_8px_20px_rgba(0,0,0,0.18)]',
+              : 'py-1',
+            options.magicPill && !infoCardOpen ? 'shadow-[0_8px_20px_rgba(0,0,0,0.18)]' : ''
           )}
           style={{
-            backgroundColor: infoCardSurfaceBg,
+            backgroundColor: options.magicPill ? infoCardSurfaceBg : 'transparent',
             color: infoCardText,
-            borderColor: infoCardBorder,
-            ...(infoCardOpen
+            borderColor: options.magicPill ? infoCardBorder : 'transparent',
+            ...(options.magicPill && infoCardOpen
               ? {}
               : {
                 width: homePillClosedWidth,
@@ -652,12 +640,12 @@ const NewTab = ({ id, updateFn }) => {
                 paddingRight: `${homePillClosedSidePaddingPx}px`,
               }),
           }}
-          onMouseEnter={() => setInfoCardOpen(true)}
+          onMouseEnter={() => options.magicPill && setInfoCardOpen(true)}
           onMouseLeave={() => setInfoCardOpen(false)}
         >
           <div
-            className={clsx('grid grid-cols-3 items-center text-[12px] sm:text-[13px] transition-all duration-300', infoCardOpen ? 'gap-3' : 'gap-2.5')}
-            style={infoCardOpen ? undefined : { columnGap: `${homePillClosedItemsGapPx}px` }}
+            className={clsx('grid grid-cols-3 items-center text-[12px] sm:text-[13px] transition-all duration-300', options.magicPill && infoCardOpen ? 'gap-3' : 'gap-2.5')}
+            style={options.magicPill && infoCardOpen ? undefined : { columnGap: `${homePillClosedItemsGapPx}px` }}
           >
             <span className="text-center font-medium tracking-tight">{menuTimeLabel}</span>
             <span
@@ -688,7 +676,7 @@ const NewTab = ({ id, updateFn }) => {
           <div
             className={clsx(
               'grid transition-[grid-template-rows,opacity,margin] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
-              infoCardOpen ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0',
+              options.magicPill && infoCardOpen ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0',
             )}
           >
             <div className="overflow-hidden">

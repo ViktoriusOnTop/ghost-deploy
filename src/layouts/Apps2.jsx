@@ -11,9 +11,7 @@ import petezahCatalog from '/src/data/games/catalog/petezah.json';
 import interstellerCatalog from '/src/data/games/catalog/intersteller.json';
 import g55msCatalog from '/src/data/games/catalog/55gms.json';
 import spaceCatalog from '/src/data/games/catalog/space.json';
-import truffledCatalog from '/src/data/games/catalog/truffled.json';
 import seleniteCatalog from '/src/data/games/catalog/selenite.json';
-import velaraCatalog from '/src/data/games/catalog/velara.json';
 import gnportsCatalog from '/src/data/games/catalog/gnports.json';
 import mirrorsCatalog from '/src/data/games/catalog/mirrors.json';
 import nowggCatalog from '/src/data/games/catalog/nowgg.json';
@@ -519,25 +517,11 @@ const GAME_SOURCE_CONFIG = [
     base: 'https://gointospace.app',
   },
   {
-    key: 'truffled',
-    label: 'Truffled',
-    type: 'jsd',
-    data: truffledCatalog,
-    base: 'https://truffled.lol',
-  },
-  {
     key: 'selenite',
     label: 'Selenite',
     type: 'jsd',
     data: seleniteCatalog,
     base: 'https://selenite.cc/resources/semag',
-  },
-  {
-    key: 'velara',
-    label: 'Velara',
-    type: 'jsd',
-    data: velaraCatalog,
-    base: 'https://velara.cc',
   },
   { key: 'gnports', label: 'gn-ports', type: 'jsd', data: gnportsCatalog },
   {
@@ -1484,7 +1468,7 @@ const TV_APPS = [
 ];
 
 const GHOST_MUSIC_APPS = [
-  { appName: 'Ghost Music', desc: 'Ghost Music player', icon: WHITE_MUSIC_ICON, url: 'https://music.anonymoose.workers.dev', playerKey: 'musicplayer', isMusicProvider: true },
+  { appName: 'Ghost Music', desc: 'Ghost Music player', icon: WHITE_MUSIC_ICON, url: 'https://monochrome.tf', playerKey: 'musicplayer', isMusicProvider: true },
 ];
 
 const THIRD_PARTY_MUSIC_APPS = [

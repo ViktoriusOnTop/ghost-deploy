@@ -3,6 +3,12 @@ import { Play, Plus, FileCode, Trash2, FolderPlus, Pencil, Save, X } from 'lucid
 import { useOptions } from '/src/utils/optionsContext';
 import { useLocation } from 'react-router-dom';
 import { createId } from '/src/utils/id';
+import Editor from 'react-simple-code-editor';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-css';
+import 'prismjs/components/prism-markup';
+import 'prismjs/themes/prism-tomorrow.css';
 
 const STORAGE_KEY = 'ghostCodeRunnerProjects';
 const RUN_DOC_KEY = 'ghostCodeRunnerRunDoc';
@@ -209,8 +215,8 @@ const CodeRunner = () => {
 
   return (
     <div className="h-full w-full overflow-hidden" style={{ backgroundColor: pageBg, color: textColor }}>
-      <div className="h-full grid grid-rows-[auto_1fr] gap-3 p-3">
-        <div className="rounded-xl border border-white/10 px-3 py-2.5 flex items-center justify-between" style={{ backgroundColor: panelBg }}>
+      <div className="h-full grid grid-rows-[auto_1fr]">
+        <div className="border-b border-white/10 px-4 py-2.5 flex items-center justify-between" style={{ backgroundColor: panelBg }}>
           <div>
             <p className="text-sm font-semibold">Code Runner</p>
             <p className="text-xs opacity-70">Build and preview HTML, CSS, and JavaScript projects</p>
@@ -218,42 +224,42 @@ const CodeRunner = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setProjectModalOpen(true)}
-              className="h-9 px-3 rounded-lg bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center gap-2"
+              className="h-9 px-3 bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center gap-2"
             >
               <FolderPlus size={14} /> Projects
             </button>
             <button
               onClick={() => setLoadModalOpen(true)}
-              className="h-9 px-3 rounded-lg bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center gap-2"
+              className="h-9 px-3 bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center gap-2"
             >
               <FolderPlus size={14} /> Load Project
             </button>
             <button
               onClick={() => setFileModalOpen(true)}
-              className="h-9 px-3 rounded-lg bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center gap-2"
+              className="h-9 px-3 bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center gap-2"
             >
               <Plus size={14} /> New File
             </button>
-            <button onClick={saveProject} className="h-9 px-3 rounded-lg bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center gap-2">
+            <button onClick={saveProject} className="h-9 px-3 bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center gap-2">
               <Save size={14} /> Save
             </button>
-            <button onClick={() => setRefreshTick((v) => v + 1)} className="h-9 px-3 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-semibold flex items-center gap-2">
+            <button onClick={() => setRefreshTick((v) => v + 1)} className="h-9 px-3 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-semibold flex items-center gap-2">
               <Play size={13} /> Run
             </button>
-            <button onClick={runInNewGhostTab} className="h-9 px-3 rounded-lg bg-[#26384d] hover:bg-[#324b68] text-sm">
+            <button onClick={runInNewGhostTab} className="h-9 px-3 bg-[#26384d] hover:bg-[#324b68] text-sm rounded">
               Run in New Tab
             </button>
           </div>
         </div>
 
-        <div className="h-full grid grid-cols-2 gap-3 min-h-0">
-          <div className="rounded-xl border border-white/10 overflow-hidden flex flex-col" style={{ backgroundColor: panelBg }}>
-            <div className="flex items-center gap-1 px-2 py-1.5 border-b border-white/10 overflow-x-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 h-full overflow-hidden">
+          <div className="border-r border-white/10 flex flex-col overflow-hidden" style={{ backgroundColor: panelBg }}>
+            <div className="flex items-center overflow-x-auto px-1 py-1 border-b border-white/10 bg-[#00000030]">
               {(activeProject?.files || []).map((file) => (
                 <button
                   key={file.id}
                   onClick={() => setActiveFileId(file.id)}
-                  className={`h-8 px-2.5 rounded-md text-xs border flex items-center gap-2 ${activeFileId === file.id ? 'bg-[#ffffff20] border-white/25' : 'bg-[#ffffff0f] border-white/10 hover:bg-[#ffffff16]'}`}
+                  className={`h-8 px-2.5 text-xs flex items-center gap-2 ${activeFileId === file.id ? 'bg-[#ffffff10] border-t border-t-[#2563eb]' : 'bg-transparent text-white/60 hover:bg-[#ffffff08]'}`}
                 >
                   <FileCode size={12} />
                   <span className="max-w-[180px] truncate">{file.name}</span>
@@ -268,15 +274,28 @@ const CodeRunner = () => {
                 </button>
               ))}
             </div>
-            <textarea
-              value={activeFile?.content || ''}
-              onChange={(e) => activeFile && setFileContent(activeFile.id, e.target.value)}
-              className="flex-1 w-full border-0 p-3 text-sm outline-none"
-              style={{ backgroundColor: subtleBg }}
-            />
+            <div className="flex-1 overflow-auto bg-[#1e1e1e]">
+              <Editor
+                value={activeFile?.content || ''}
+                onValueChange={(code) => activeFile && setFileContent(activeFile.id, code)}
+                highlight={(code) => {
+                  let grammar = Prism.languages.markup;
+                  if (activeFile?.type === 'css') grammar = Prism.languages.css;
+                  if (activeFile?.type === 'js') grammar = Prism.languages.javascript;
+                  return Prism.highlight(code, grammar, activeFile?.type === 'js' ? 'javascript' : activeFile?.type === 'css' ? 'css' : 'markup');
+                }}
+                padding={15}
+                style={{
+                  fontFamily: '"Fira Code", "Consolas", monospace',
+                  fontSize: 14,
+                  minHeight: '100%',
+                }}
+                textareaClassName="outline-none"
+              />
+            </div>
           </div>
 
-          <div className="rounded-xl border border-white/10 overflow-hidden flex flex-col" style={{ backgroundColor: panelBg }}>
+          <div className="flex-1 overflow-hidden flex flex-col" style={{ backgroundColor: panelBg }}>
             <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
               <p className="text-sm font-semibold">Preview</p>
               <span className="text-xs opacity-70">{activeProject?.name || 'Project'}</span>
@@ -295,16 +314,16 @@ const CodeRunner = () => {
       {projectModalOpen && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/55" onClick={() => setProjectModalOpen(false)} />
-          <div className="relative w-full max-w-lg rounded-xl border border-white/10 p-4 space-y-3" style={{ backgroundColor: panelBg }}>
+          <div className="ghost-anim-card relative w-full max-w-lg rounded-xl border border-white/10 p-4 space-y-3 shadow-2xl" style={{ backgroundColor: panelBg }}>
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold">Project Manager</h3>
-              <button className="p-1 rounded hover:bg-white/10" onClick={() => setProjectModalOpen(false)}><X size={16} /></button>
+              <button className="p-1 hover:bg-white/10" onClick={() => setProjectModalOpen(false)}><X size={16} /></button>
             </div>
             <input
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
               placeholder="New project name"
-              className="w-full h-10 rounded-md border border-white/10 px-3 text-sm"
+              className="w-full h-10 border border-white/10 px-3 text-sm outline-none focus:border-white/30"
               style={{ backgroundColor: subtleBg }}
             />
             <button
@@ -312,7 +331,7 @@ const CodeRunner = () => {
                 createProject();
                 setProjectModalOpen(false);
               }}
-              className="w-full h-10 rounded-md bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center justify-center gap-2"
+              className="w-full h-10 bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center justify-center gap-2"
             >
               <FolderPlus size={14} /> Create Project
             </button>
@@ -321,7 +340,7 @@ const CodeRunner = () => {
               value={renameDraft}
               onChange={(e) => setRenameDraft(e.target.value)}
               placeholder="Rename active project"
-              className="w-full h-10 rounded-md border border-white/10 px-3 text-sm"
+              className="w-full h-10 border border-white/10 px-3 text-sm outline-none focus:border-white/30"
               style={{ backgroundColor: subtleBg }}
             />
             <button
@@ -329,7 +348,7 @@ const CodeRunner = () => {
                 renameProject();
                 setProjectModalOpen(false);
               }}
-              className="w-full h-10 rounded-md bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center justify-center gap-2"
+              className="w-full h-10 bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center justify-center gap-2"
             >
               <Pencil size={14} /> Rename Active Project
             </button>
@@ -340,16 +359,16 @@ const CodeRunner = () => {
       {loadModalOpen && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/55" onClick={() => setLoadModalOpen(false)} />
-          <div className="relative w-full max-w-lg rounded-xl border border-white/10 p-4 space-y-3" style={{ backgroundColor: panelBg }}>
+          <div className="ghost-anim-card relative w-full max-w-lg rounded-xl border border-white/10 p-4 space-y-3 shadow-2xl" style={{ backgroundColor: panelBg }}>
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold">Load Saved Project</h3>
-              <button className="p-1 rounded hover:bg-white/10" onClick={() => setLoadModalOpen(false)}><X size={16} /></button>
+              <button className="p-1 hover:bg-white/10" onClick={() => setLoadModalOpen(false)}><X size={16} /></button>
             </div>
             <div className="max-h-[52vh] overflow-y-auto space-y-2 pr-1">
               {projects.map((project) => {
                 const isActive = project.id === activeProjectId;
                 return (
-                  <div key={project.id} className="rounded-lg border border-white/10 px-3 py-2 flex items-center justify-between gap-3" style={{ backgroundColor: subtleBg }}>
+                  <div key={project.id} className="border border-white/10 px-3 py-2 flex items-center justify-between gap-3" style={{ backgroundColor: subtleBg }}>
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{project.name}</p>
                       <p className="text-xs opacity-70">{project.files?.length || 0} file(s)</p>
@@ -361,7 +380,7 @@ const CodeRunner = () => {
                         setActiveFileId(project.files?.[0]?.id || '');
                         setLoadModalOpen(false);
                       }}
-                      className={`h-8 px-3 rounded-md text-xs ${isActive ? 'bg-[#ffffff15] opacity-60 cursor-not-allowed' : 'bg-[#ffffff14] hover:bg-[#ffffff22]'}`}
+                      className={`h-8 px-3 text-xs ${isActive ? 'bg-[#ffffff15] opacity-60 cursor-not-allowed' : 'bg-[#ffffff14] hover:bg-[#ffffff22]'}`}
                     >
                       {isActive ? 'Loaded' : 'Load'}
                     </button>
@@ -376,23 +395,23 @@ const CodeRunner = () => {
       {fileModalOpen && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/55" onClick={() => setFileModalOpen(false)} />
-          <div className="relative w-full max-w-lg rounded-xl border border-white/10 p-4 space-y-3" style={{ backgroundColor: panelBg }}>
+          <div className="ghost-anim-card relative w-full max-w-lg rounded-xl border border-white/10 p-4 space-y-3 shadow-2xl" style={{ backgroundColor: panelBg }}>
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold">Create File</h3>
-              <button className="p-1 rounded hover:bg-white/10" onClick={() => setFileModalOpen(false)}><X size={16} /></button>
+              <button className="p-1 hover:bg-white/10" onClick={() => setFileModalOpen(false)}><X size={16} /></button>
             </div>
             <div className="grid grid-cols-[1fr_110px] gap-2">
               <input
                 value={newFileName}
                 onChange={(e) => setNewFileName(e.target.value)}
                 placeholder="New file name"
-                className="w-full h-10 rounded-md border border-white/10 px-3 text-sm"
+                className="w-full h-10 border border-white/10 px-3 text-sm outline-none focus:border-white/30"
                 style={{ backgroundColor: subtleBg }}
               />
               <select
                 value={newFileType}
                 onChange={(e) => setNewFileType(e.target.value)}
-                className="w-full h-10 rounded-md border border-white/10 px-2 text-sm outline-none"
+                className="w-full h-10 border border-white/10 px-2 text-sm outline-none focus:border-white/30"
                 style={{ backgroundColor: subtleBg }}
               >
                 <option value="html">html</option>
@@ -405,7 +424,7 @@ const CodeRunner = () => {
                 createFile();
                 setFileModalOpen(false);
               }}
-              className="w-full h-10 rounded-md bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center justify-center gap-2"
+              className="w-full h-10 bg-[#ffffff14] hover:bg-[#ffffff22] text-sm flex items-center justify-center gap-2"
             >
               <Plus size={14} /> Create File
             </button>

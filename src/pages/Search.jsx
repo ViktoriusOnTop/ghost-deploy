@@ -46,11 +46,47 @@ import Discord from '/src/components/Discord';
 import { getLucideIcon } from '/src/components/settings/components/SidebarEditor';
 
 const SAVED_TABS_KEY = 'ghostSavedTabs';
+const PROFILE_ACTIVE_KEY = 'ghostBrowserActiveProfileId';
 const SITE_POLICY_KEY = 'ghostSitePolicies';
 const WEATHER_COORDS_CACHE_KEY = 'ghostWeatherCoordsCache';
 const WEATHER_COORDS_MAX_AGE_MS = 60 * 60 * 1000;
 const WEATHER_DATA_CACHE_KEY = 'ghostWeatherDataCacheV1';
 const WEATHER_DATA_MAX_AGE_MS = 5 * 60 * 1000;
+
+const getActiveProfileId = () => {
+  try {
+    return localStorage.getItem(PROFILE_ACTIVE_KEY) || 'default';
+  } catch {
+    return 'default';
+  }
+};
+
+const getSavedTabsKey = (profileId = getActiveProfileId()) => `${profileId}_${SAVED_TABS_KEY}`;
+
+const readSavedTabs = (profileId = getActiveProfileId()) => {
+  try {
+    const key = getSavedTabsKey(profileId);
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw);
+
+    if (profileId === 'default') {
+      const legacyRaw = localStorage.getItem(SAVED_TABS_KEY);
+      if (legacyRaw) return JSON.parse(legacyRaw);
+    }
+  } catch {
+  }
+  return null;
+};
+
+const writeSavedTabs = (tabs, profileId = getActiveProfileId()) => {
+  try {
+    localStorage.setItem(
+      getSavedTabsKey(profileId),
+      JSON.stringify({ tabs: Array.isArray(tabs) ? tabs : [] }),
+    );
+  } catch {
+  }
+};
 
 const getSitePolicies = () => {
   try {
@@ -538,14 +574,7 @@ export default function Loader({ url, ui = true, zoom }) {
 
   const persistSavedTabs = () => {
     if (!(options.saveTabs ?? true)) return;
-    try {
-      localStorage.setItem(
-        SAVED_TABS_KEY,
-        JSON.stringify({
-          tabs: loaderStore.getState().tabs,
-        }),
-      );
-    } catch { }
+    writeSavedTabs(loaderStore.getState().tabs);
   };
   const barStyle = {
     backgroundColor: options.barColor || '#09121e',
@@ -672,7 +701,7 @@ export default function Loader({ url, ui = true, zoom }) {
     const requestedRawUrl = String(rawUrl || '').trim();
     let displayUrl = '';
 
-    // Intercept ghost://ai — redirect to external provider if one is set
+    // Intercept ghost://ai then redirect to external provider if one is set
     if (String(rawUrl).toLowerCase() === 'ghost://ai' && options.defaultAiProvider) {
       const providerUrls = {
         stoutchat: 'https://duck.ai',
@@ -686,7 +715,7 @@ export default function Loader({ url, ui = true, zoom }) {
         copilot: 'https://copilot.microsoft.com',
         deepseek: 'https://chat.deepseek.com',
         mistral: 'https://chat.mistral.ai',
-        grok: 'https://grok.x.ai',
+        grok: 'https://grok.com',
         you: 'https://you.com',
         poe: 'https://poe.com',
         huggingchat: 'https://huggingface.co/chat',
@@ -1081,24 +1110,12 @@ export default function Loader({ url, ui = true, zoom }) {
         };
       }
 
-      if (source === 'ipapi') {
+      if (source === 'freeipapi') {
         return {
-          timezone: String(payload.timezone || ''),
+          timezone: String(payload.timeZone || ''),
           latitude: Number(payload.latitude),
           longitude: Number(payload.longitude),
-          city: String(payload.city || ''),
-        };
-      }
-
-      if (source === 'ipwho') {
-        const zone = typeof payload.timezone === 'string'
-          ? payload.timezone
-          : payload?.timezone?.id || '';
-        return {
-          timezone: String(zone || ''),
-          latitude: Number(payload.latitude),
-          longitude: Number(payload.longitude),
-          city: String(payload.city || ''),
+          city: String(payload.cityName || ''),
         };
       }
 
@@ -1131,8 +1148,7 @@ export default function Loader({ url, ui = true, zoom }) {
 
       const providers = [
         { url: '/api/ip/meta', source: 'proxy' },
-        { url: 'https://ipwho.is/', source: 'ipwho' },
-        { url: 'https://ipapi.co/json/', source: 'ipapi' },
+        { url: 'https://freeipapi.com/api/json', source: 'freeipapi' },
         { url: 'https://ipinfo.io/json', source: 'ipinfo' },
       ];
 
@@ -1383,8 +1399,7 @@ export default function Loader({ url, ui = true, zoom }) {
   useEffect(() => {
     if (options.saveTabs ?? true) {
       try {
-        const raw = localStorage.getItem(SAVED_TABS_KEY);
-        const parsed = JSON.parse(raw || '{}');
+        const parsed = readSavedTabs();
         const savedTabs = Array.isArray(parsed.tabs) ? parsed.tabs : [];
         if (savedTabs.length > 0) {
           const normalizedTabs = savedTabs.map((tab) => {
@@ -1428,18 +1443,16 @@ export default function Loader({ url, ui = true, zoom }) {
 
   useEffect(() => {
     if (!(options.saveTabs ?? true)) {
-      localStorage.removeItem(SAVED_TABS_KEY);
+      localStorage.removeItem(getSavedTabsKey());
+      if (getActiveProfileId() === 'default') {
+        localStorage.removeItem(SAVED_TABS_KEY);
+      }
       return;
     }
 
     const unsubscribe = loaderStore.subscribe((state) => {
       try {
-        localStorage.setItem(
-          SAVED_TABS_KEY,
-          JSON.stringify({
-            tabs: state.tabs,
-          }),
-        );
+        writeSavedTabs(state.tabs);
       } catch { }
     });
 

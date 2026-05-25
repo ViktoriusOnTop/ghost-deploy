@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import { useState, useEffect, useRef, useCallback, useMemo, memo, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LucideSearch, Earth } from 'lucide-react';
-import { GlowWrapper } from '../utils/Glow';
 import { useOptions } from '../utils/optionsContext';
 import Logo from '../components/Logo';
 import theme from '../styles/theming.module.css';
@@ -62,9 +61,11 @@ const SearchContainer = memo(function SearchContainer({ logo = true, cls, nav = 
     }
   }
 
+  const inputRef = useRef(null);
+
   const handleInputChange = useCallback(
     (e) => {
-      const newQuery = e.target.value;
+      const newQuery = e.currentTarget.textContent;
       setQuery(newQuery);
 
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -81,12 +82,14 @@ const SearchContainer = memo(function SearchContainer({ logo = true, cls, nav = 
 
   const handleKeyDown = useCallback(
     (e) => {
-      if (e.key !== 'Enter') return;
-      const trimmed = query.trim();
-      if (!trimmed) return;
-      go(trimmed);
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const trimmed = e.currentTarget.textContent.trim();
+        if (!trimmed) return;
+        go(trimmed);
+      }
     },
-    [query, go],
+    [go],
   );
 
   const handleResultClick = useCallback(
@@ -123,37 +126,34 @@ const SearchContainer = memo(function SearchContainer({ logo = true, cls, nav = 
       data-m-duration={!cls && '0.8'}
     >
       {logo && <Logo options="w-[15.8rem] h-auto" />}
-      <GlowWrapper
-        glowOptions={{ color: options.glowWrapperColor || '255, 255, 255', size: 70, opacity: 0.2 }}
-      >
-        <div className="w-[40.625rem]">
+      <div className="w-[40.625rem]">
+        <div
+          id="search-div"
+          className={clsx(
+            'flex items-center gap-3 shadow-xl pl-4 pr-4 w-full h-[3.41rem]',
+            results.length ? 'rounded-t-[14px] rounded-b-none' : 'rounded-[14px]',
+            theme[`searchBarColor`],
+            theme[`theme-${options.theme || 'default'}`],
+          )}
+        >
+          {iconSrc ? (
+            <img src={iconSrc} className="w-5 h-5 shrink-0" alt="Search icon" loading="lazy" />
+          ) : (
+            <Earth size={22} />
+          )}
+
           <div
-            id="search-div"
-            className={clsx(
-              'flex items-center gap-3 shadow-xl pl-4 pr-4 w-full h-[3.41rem]',
-              results.length ? 'rounded-t-[14px] rounded-b-none' : 'rounded-[14px]',
-              theme[`searchBarColor`],
-              theme[`theme-${options.theme || 'default'}`],
-            )}
-          >
-            {iconSrc ? (
-              <img src={iconSrc} className="w-5 h-5 shrink-0" alt="Search icon" loading="lazy" />
-            ) : (
-              <Earth size={22} />
-            )}
+            contentEditable="plaintext-only"
+            suppressContentEditableWarning
+            ref={inputRef}
+            data-placeholder={placeholder}
+            className="flex-1 bg-transparent outline-none text-[16.5px] leading-[20px] whitespace-nowrap overflow-hidden before:opacity-50 empty:before:content-[attr(data-placeholder)] cursor-text"
+            onInput={handleInputChange}
+            onKeyDown={handleKeyDown}
+          />
 
-            <input
-              type="text"
-              placeholder={placeholder}
-              className="flex-1 bg-transparent outline-hidden text-[16.5px] leading-[20px] placeholder:font-[Inter] placeholder:font-medium"
-              autoComplete="off"
-              value={query}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-            />
-
-            <LucideSearch className="w-[1.08rem] h-[1.08rem] shrink-0" />
-          </div>
+          <LucideSearch className="w-[1.08rem] h-[1.08rem] shrink-0" />
+        </div>
 
           {results.length > 0 && (
             <div
@@ -193,7 +193,6 @@ const SearchContainer = memo(function SearchContainer({ logo = true, cls, nav = 
             </div>
           )}
         </div>
-      </GlowWrapper>
     </div>
   );
 });

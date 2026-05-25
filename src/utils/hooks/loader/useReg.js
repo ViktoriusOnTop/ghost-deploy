@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
-import { BareMuxConnection, BareClient } from '@mercuryworkshop/bare-mux';
+import { BareMuxConnection, BareClient } from 'bare-mux-fork';
 import { useOptions } from '/src/utils/optionsContext';
 import { fetchW } from './findWisp';
 import store from './useLoaderStore';
 
 export default function useReg() {
   const { options } = useOptions();
-  const defaultWispEndpoint = 'wss://account.studyeurope.edu.eu.org/wisp/';
+  const defaultWispEndpoint = 'wss://doge.studyeurope.edu.eu.org/connection/';
   const sws = [{ path: '/uv/ghost-sw.js', scope: '/uv/' }, { path: '/s_sw.js', scope: '/scramjet/' }];
   const setWispStatus = store((s) => s.setWispStatus);
 
@@ -71,7 +71,7 @@ export default function useReg() {
                     window.addEventListener('message', (e) => {
                         if (e.data && e.data.type === 'ghost-update-shortcuts') shortcuts = e.data.shortcuts;
                     });
-                    window.addEventListener('keydown', (e) => {
+                const stealShortcut = (e) => {
                         let key = e.key;
                         if (key === ' ' || key === 'Spacebar') key = 'Space';
                         if (key.length === 1) key = key.toUpperCase();
@@ -83,9 +83,11 @@ export default function useReg() {
                         out.push(key);
                         const combo = out.join('+');
 
-                        if (shortcuts.includes(combo) || combo.startsWith('F11') || combo.startsWith('F12') || combo.startsWith('F5')) {
-                            e.preventDefault();
-                            e.stopPropagation();
+                        const hasModifier = e.ctrlKey || e.altKey || e.metaKey;
+                        if (hasModifier || shortcuts.includes(combo) || combo.startsWith('F11') || combo.startsWith('F12') || combo.startsWith('F5')) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.stopImmediatePropagation?.();
                             window.top.postMessage({
                                 type: 'ghost-shortcut',
                                 key: e.key,
@@ -95,7 +97,9 @@ export default function useReg() {
                                 metaKey: e.metaKey
                             }, '*');
                         }
-                    }, { capture: true });
+                      };
+                      window.addEventListener('keydown', stealShortcut, { capture: true });
+                      document.addEventListener('keydown', stealShortcut, { capture: true });
                 })();
             </script>
             `
@@ -157,9 +161,9 @@ export default function useReg() {
       const wispUrl = uniqueWispCandidates[0] || null;
 
       const preferredTransport =
-        String(options.transport || 'libcurl').toLowerCase() === 'epoxy'
-          ? 'epoxy'
-          : 'libcurl';
+        String(options.transport || 'epoxy').toLowerCase() === 'libcurl'
+          ? 'libcurl'
+          : 'epoxy';
 
       const resolveRemoteProxyUrl = () => {
         if (String(options.proxyRouting || 'direct').toLowerCase() !== 'remote') return null;

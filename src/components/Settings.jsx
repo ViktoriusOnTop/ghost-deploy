@@ -4,6 +4,7 @@ import theme from '/src/styles/theming.module.css';
 import { useOptions } from '/src/utils/optionsContext';
 import SettingsContainerItem from './settings/components/ContainerItem';
 import SidebarEditor from './settings/components/SidebarEditor';
+import BackgroundEditor from './settings/components/BackgroundEditor';
 import * as settings from '/src/data/settings';
 import PanicDialog from './PanicDialog';
 import ShortcutsDialog from './settings/components/ShortcutsDialog';
@@ -151,8 +152,9 @@ const InfoPanel = () => {
           <p className="font-semibold mb-1">Thank you to</p>
           <ul className="space-y-1 opacity-90">
             <li>- Creator of DogeUB (Ghost is a fork of his unblocker)</li>
-            <li>- Creator of Vapor v4 (took some game sources from Vapor)</li>
+            <li>- Creator of Vapor v4 (took some game sources from Vapor & inspo)</li>
             <li>- Creator of DayDreamX (heavily inspired by DayDreamX)</li>
+            <li>- Creator of ReactBits (backgrounds & some components taken from him)</li>
             <li>
               - Ghost Icon attribution:{' '}
               <span
@@ -595,6 +597,7 @@ const Setting = ({ setting }) => {
   const [cssEditorRender, setCssEditorRender] = useState(false);
   const [cssEditorAnim, setCssEditorAnim] = useState(false);
   const [sidebarEditorOpen, setSidebarEditorOpen] = useState(false);
+  const [backgroundEditorOpen, setBackgroundEditorOpen] = useState(false);
   const [selectedPresetId, setSelectedPresetId] = useState('');
   const [newPresetName, setNewPresetName] = useState('');
   const [cssDraft, setCssDraft] = useState('');
@@ -843,6 +846,7 @@ const Setting = ({ setting }) => {
     updateOption,
     openCssEditor: {
       openSidebarEditor: () => setSidebarEditorOpen(true),
+      openBackgroundEditor: () => setBackgroundEditorOpen(true),
       openCustomTheme: () => setCustomThemeOpen(true),
       confirmCustomThemePresetSwitch,
     },
@@ -1369,6 +1373,7 @@ const Setting = ({ setting }) => {
       {setting === 'Info' && <InfoPanel />}
 
       <SidebarEditor open={sidebarEditorOpen} onClose={() => setSidebarEditorOpen(false)} />
+      <BackgroundEditor open={backgroundEditorOpen} onClose={() => setBackgroundEditorOpen(false)} />
       <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} />
       <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
 
@@ -1390,15 +1395,6 @@ const Setting = ({ setting }) => {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-semibold">Custom Theme</h2>
-                  <span
-                    className="text-[0.6rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
-                    style={{
-                      backgroundColor: isUiLight ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.12)',
-                      color: popupMutedColor,
-                    }}
-                  >
-                    BETA
-                  </span>
                 </div>
                 <p className="text-sm mt-0.5" style={{ color: popupMutedColor }}>Create a theme from a single color.</p>
                 <p className="text-xs mt-1" style={{ color: popupMutedColor }}>Light mode isn&apos;t avaliable.</p>

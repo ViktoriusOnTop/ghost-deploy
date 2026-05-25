@@ -65,7 +65,7 @@ const PROVIDER_LINKS = {
   copilot: 'https://copilot.microsoft.com',
   deepseek: 'https://chat.deepseek.com',
   mistral: 'https://chat.mistral.ai',
-  grok: 'https://grok.x.ai',
+  grok: 'https://grok.com',
   you: 'https://you.com',
   poe: 'https://poe.com',
   huggingchat: 'https://huggingface.co/chat',

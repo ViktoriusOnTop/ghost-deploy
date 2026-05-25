@@ -315,7 +315,11 @@ const scrwlist = new Set([
 ]);
 
 const SCRAMJET_FORCE_UV_HOSTS = new Set([
-  'vscode.dev',
+  'discord.com',
+  'spotify.com',
+  'accounts.spotify.com',
+  'youtube.com',
+  'www.youtube.com',
 ]);
 
 const shouldForceUvRoute = (urlValue) => {
@@ -345,6 +349,13 @@ export const process = (input, decode = false, prType, engine = "https://duckduc
   const ghostRoute = resolveGhostRoute(input);
   if (!decode && ghostRoute) {
     return ghostRoute;
+  }
+
+  if (!decode) {
+    const directUrl = check(input, engine);
+    if (directUrl.startsWith('https://monochrome.tf')) {
+      return directUrl;
+    }
   }
 
   let prefix;

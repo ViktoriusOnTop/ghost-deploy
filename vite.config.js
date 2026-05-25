@@ -8,7 +8,7 @@ import { logging, server as wisp } from '@mercuryworkshop/wisp-js/server';
 import { createBareServer } from '@tomphttp/bare-server-node';
 import { bareModulePath } from '@mercuryworkshop/bare-as-module3';
 import { libcurlPath } from '@mercuryworkshop/libcurl-transport';
-import { baremuxPath } from '@mercuryworkshop/bare-mux/node';
+import { baremuxPath } from 'bare-mux-fork/node';
 import { scramjetPath } from '@mercuryworkshop/scramjet/path';
 import { uvPath } from '@titaniumnetwork-dev/ultraviolet';
 import dotenv from 'dotenv';
@@ -73,6 +73,7 @@ export default defineConfig(({ command }) => {
       viteStaticCopy({
         targets: [
           { src: [normalizePath(resolve(libcurlPath, '*'))], dest: 'libcurl' },
+          { src: [normalizePath(resolve(dirname(fileURLToPath(import.meta.url)), 'node_modules/libcurl.js/libcurl.wasm'))], dest: 'libcurl' },
           { src: [normalizePath(resolve(epoxyPath, '*'))], dest: 'epoxy-raw' },
           { src: [normalizePath(resolve(baremuxPath, '*'))], dest: 'baremux' },
           { src: [normalizePath(resolve(scramjetPath, '*'))], dest: 'scram' },

@@ -46,5 +46,15 @@
       "Published full documentation including Ghost Docs and README updates.",
       "Promoted release track from Beta to Stable for versions 1.4 and onward."
     ]
+  },
+  {
+    "version": "1.8",
+    "track": "Stable",
+    "date": "2026-05-25",
+    "changes": [
+      "Removed Tor completely to improve reliability and reduce crashes.",
+      "Updated WISP server endpoints.",
+      "Ghost Music now loads via iframe instead of being proxied."
+    ]
   }
 ]

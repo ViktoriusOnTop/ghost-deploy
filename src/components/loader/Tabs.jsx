@@ -11,6 +11,8 @@ const PROFILE_STORE_KEY = 'ghostBrowserProfiles';
 const PROFILE_ACTIVE_KEY = 'ghostBrowserActiveProfileId';
 const SAVED_TABS_KEY = 'ghostSavedTabs';
 
+const getSavedTabsKey = (profileId) => `${profileId || 'default'}_${SAVED_TABS_KEY}`;
+
 const isPlainObject = (value) => !!value && typeof value === 'object' && !Array.isArray(value);
 
 const isValidProfileImport = (parsed) => {
@@ -43,18 +45,19 @@ const snapshotCurrentStorage = () => {
   const data = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (!key || key === PROFILE_STORE_KEY || key === PROFILE_ACTIVE_KEY) continue;
+    if (!key || key === PROFILE_STORE_KEY || key === PROFILE_ACTIVE_KEY || key.includes('ghostLoaderSession')) continue;
     data[key] = localStorage.getItem(key);
   }
   return data;
 };
 
 const applyStorageSnapshot = (snapshot) => {
-  const keep = new Set([PROFILE_STORE_KEY, PROFILE_ACTIVE_KEY]);
   const toRemove = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && !keep.has(key)) toRemove.push(key);
+    if (key && key !== PROFILE_STORE_KEY && key !== PROFILE_ACTIVE_KEY && !key.includes('ghostLoaderSession')) {
+      toRemove.push(key);
+    }
   }
   toRemove.forEach((key) => localStorage.removeItem(key));
 
@@ -159,6 +162,11 @@ const TabBar = () => {
         };
         localStorage.setItem(PROFILE_STORE_KEY, JSON.stringify([initial]));
         localStorage.setItem(PROFILE_ACTIVE_KEY, initial.id);
+        // Copy Zustand session from 'default' key to the new profile's key
+        const defaultSession = localStorage.getItem('default_ghostLoaderSession');
+        if (defaultSession) {
+          localStorage.setItem(`${initial.id}_ghostLoaderSession`, defaultSession);
+        }
         setProfiles([initial]);
         setActiveProfileId(initial.id);
         return;
@@ -196,27 +204,83 @@ const TabBar = () => {
   );
 
   const createProfile = () => {
-    const name = (newProfileName || `Profile ${profiles.length + 1}`).trim();
+    const initialTabs = [
+      {
+        title: 'New Tab',
+        id: createId(),
+        url: 'tabs://new',
+        displayUrl: '',
+        active: true,
+        history: ['tabs://new'],
+        historyIndex: 0,
+        isLoading: false,
+      },
+    ];
+    const name = (newProfileName || `New Profile ${profiles.length + 1}`).trim();
     const nextProfile = {
       id: createId(),
       name,
-      snapshot: snapshotCurrentStorage(),
-      tabs: getLiveTabsSnapshot(),
+      snapshot: {},
+      tabs: initialTabs,
       updatedAt: Date.now(),
     };
     const next = [...profiles, nextProfile];
-    persistProfiles(next, nextProfile.id);
+    
+    // Save to localStorage
+    localStorage.setItem(PROFILE_STORE_KEY, JSON.stringify(next));
+    setProfiles(next);
     setNewProfileName('');
+
+    // Pre-seed this profile's Zustand storage with blank tabs
+    try {
+      const sessionKey = `${nextProfile.id}_ghostLoaderSession`;
+      const session = {
+        state: { tabs: initialTabs, showTabs: true, showUI: true, zoomLevels: {} },
+        version: 0,
+      };
+      localStorage.setItem(sessionKey, JSON.stringify(session));
+      localStorage.setItem(getSavedTabsKey(nextProfile.id), JSON.stringify({ tabs: initialTabs }));
+    } catch {}
+    // Profile is created — user can click it to switch when ready
   };
 
   const switchProfile = (targetId) => {
     if (!targetId || targetId === activeProfileId) return;
+
+    // Read profiles from localStorage to avoid stale React state closures
+    let currentProfiles;
+    try {
+      currentProfiles = JSON.parse(localStorage.getItem(PROFILE_STORE_KEY) || '[]');
+    } catch {
+      currentProfiles = profiles;
+    }
+
+    // Save current profile's live tabs
     const liveTabs = getLiveTabsSnapshot();
     try {
       localStorage.setItem(SAVED_TABS_KEY, JSON.stringify({ tabs: liveTabs }));
+      localStorage.setItem(getSavedTabsKey(activeProfileId), JSON.stringify({ tabs: liveTabs }));
     } catch { }
 
-    const next = profiles.map((profile) => {
+    // Also save current tabs into Zustand's profile-keyed storage
+    try {
+      const currentSessionKey = `${activeProfileId}_ghostLoaderSession`;
+      let currentSession = { state: {}, version: 0 };
+      const existingCurrent = localStorage.getItem(currentSessionKey);
+      if (existingCurrent) {
+        try { currentSession = JSON.parse(existingCurrent); } catch {}
+      }
+      currentSession.state = {
+        ...(currentSession.state || {}),
+        tabs: liveTabs,
+        showTabs: true,
+        showUI: true,
+      };
+      currentSession.version = 0;
+      localStorage.setItem(currentSessionKey, JSON.stringify(currentSession));
+    } catch {}
+
+    const next = currentProfiles.map((profile) => {
       if (profile.id === activeProfileId) {
         return { ...profile, snapshot: snapshotCurrentStorage(), tabs: liveTabs, updatedAt: Date.now() };
       }
@@ -225,16 +289,53 @@ const TabBar = () => {
     const target = next.find((profile) => profile.id === targetId);
     if (!target) return;
 
+    const targetTabs = Array.isArray(target.tabs) && target.tabs.length > 0
+      ? target.tabs
+      : [
+          {
+            title: 'New Tab',
+            id: createId(),
+            url: 'tabs://new',
+            displayUrl: '',
+            active: true,
+            history: ['tabs://new'],
+            historyIndex: 0,
+            isLoading: false,
+          },
+        ];
+
+    try {
+      loaderStore.setState({
+        tabs: targetTabs,
+        showTabs: true,
+        showUI: true,
+        iframeUrls: {},
+        frameRefs: null,
+        closedTabs: [],
+        zoomLevels: {},
+      });
+    } catch {}
+
     persistProfiles(next, targetId);
     applyStorageSnapshot(target.snapshot || {});
+    
+    // CRITICAL: Write the target's tabs into the Zustand storage key
+    // so that after reload, Zustand hydrates the correct tabs for this profile.
     try {
-      const targetTabs = Array.isArray(target.tabs)
-        ? target.tabs
-        : JSON.parse(String(target?.snapshot?.[SAVED_TABS_KEY] || '{}')).tabs;
-      if (Array.isArray(targetTabs)) {
-        localStorage.setItem(SAVED_TABS_KEY, JSON.stringify({ tabs: targetTabs }));
-      }
-    } catch { }
+      const sessionKey = `${targetId}_ghostLoaderSession`;
+      const session = {
+        state: {
+          tabs: targetTabs,
+          showTabs: true,
+          showUI: true,
+          zoomLevels: {},
+        },
+        version: 0,
+      };
+      localStorage.setItem(sessionKey, JSON.stringify(session));
+      localStorage.setItem(getSavedTabsKey(targetId), JSON.stringify({ tabs: targetTabs }));
+    } catch {}
+
     window.location.reload();
   };
 
@@ -248,6 +349,11 @@ const TabBar = () => {
     const next = profiles.filter((profile) => profile.id !== id);
     const nextActive = id === activeProfileId ? next[0].id : activeProfileId;
     persistProfiles(next, nextActive);
+
+    try {
+      localStorage.removeItem(getSavedTabsKey(id));
+      localStorage.removeItem(`${id}_ghostLoaderSession`);
+    } catch {}
 
     if (id === activeProfileId) {
       const nextTarget = next.find((profile) => profile.id === nextActive);

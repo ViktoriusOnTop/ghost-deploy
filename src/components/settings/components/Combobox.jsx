@@ -58,7 +58,7 @@ const ComboBox = ({
 
   return (
     <Combobox
-      value={selectedValue !== undefined ? selectedValue : ''}
+      value={selectedValue ?? null}
       onChange={action}
       by={(a, b) => getOptionId(a) === getOptionId(b)}
       disabled={disabled}

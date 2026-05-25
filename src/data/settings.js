@@ -97,7 +97,32 @@ export const privacyConfig = ({ options, updateOption, openPanic }) => ({
     type: 'select',
     action: (a) => updateOption(a),
   },
+  '1a': {
+    name: 'Custom Site Title',
+    desc: 'Enter your custom site title here.',
+    value: options.customSiteTitle || '',
+    type: 'input',
+    placeholder: 'My Custom Title...',
+    hidden: options.tabName !== 'Custom',
+    action: (v) => updateOption({ customSiteTitle: v }),
+  },
   2: {
+    name: 'Stealth Mode',
+    desc: 'Obfuscates page text with lookalike characters to bypass screen monitoring and filters.',
+    value: options.stealthMode ?? 0,
+    type: 'slider',
+    min: 0,
+    max: 2,
+    step: 1,
+    action: (v) => updateOption({ stealthMode: parseInt(v) || 0 }),
+    customValueLabel: (v) => {
+      if (v == 0) return 'Level 0: Disabled';
+      if (v == 1) return 'Level 1: Subtle';
+      if (v == 2) return 'Level 2: Max';
+      return '';
+    },
+  },
+  3: {
     name: 'Auto Cloak',
     desc: 'Automatically apply your selected cloak when this tab loses focus and restore on return.',
     value: !!options.clkOff,
@@ -148,7 +173,7 @@ export const privacyConfig = ({ options, updateOption, openPanic }) => ({
     type: 'switch',
     action: (b) => setTimeout(() => updateOption({ hideLocation: b }), 100),
   },
-  8: {
+  9: {
     name: 'Anti Close',
     desc: 'Show a confirmation popup before any tab close action.',
     value: !!options.antiClose,
@@ -186,15 +211,22 @@ export const customizeConfig = ({ options, updateOption, openCssEditor }) => ({
     action: openCssEditor?.openCustomTheme,
   },
   3: {
+    name: 'Animated Background',
+    desc: 'Browse and preview animated backgrounds with customizable styles.',
+    type: 'button',
+    value: options.customAnimatedBackground ? `Active: ${options.customAnimatedBackground}` : 'Open Background Editor',
+    action: openCssEditor?.openBackgroundEditor,
+  },
+  4: {
     name: 'Background Design',
-    desc: "Customize the site's background design. Background designs do not work with Custom Background URL.",
+    desc: "Customize the site's background design.",
     config: designConfigForSettings,
     value: find(designConfigForSettings, (c) => c.value?.bgDesign === options.bgDesign, 0),
     type: 'select',
     action: (a) => updateOption(a),
-    disabled: !!options.customBackgroundImage,
+    disabled: !!options.customAnimatedBackground,
   },
-  4: {
+  5: {
     name: 'Background Transparency',
     desc: 'Set the transparency/dim of the background image or design (0-100). Lower values make it darker/dimmer.',
     value: options.bgTransparency ?? '20',
@@ -208,21 +240,12 @@ export const customizeConfig = ({ options, updateOption, openCssEditor }) => ({
       updateOption({ bgTransparency: String(val) });
     },
   },
-  5: {
-    name: 'Apps per Page',
-    desc: 'Number of apps to show per page ("All" will show everything).',
-    config: appsPerPageConfig,
-    value: find(appsPerPageConfig, (c) => c.value.itemsPerPage === (options.itemsPerPage ?? 50), 3),
-    type: 'select',
-    action: (a) => updateOption(a),
-  },
   6: {
-    name: 'Navigation Scale',
-    desc: 'Scale navigation bar size (logo & font) globally.',
-    config: navScaleConfig,
-    value: find(navScaleConfig, (c) => c.value.navScale === (options.navScale ?? 1), 3),
-    type: 'select',
-    action: (a) => updateOption(a),
+    name: 'Gradient Text',
+    desc: 'Makes sitewide headings use a gradient matching your theme.',
+    value: !!options.gradientText,
+    type: 'switch',
+    action: (b) => setTimeout(() => updateOption({ gradientText: b }), 100),
   },
   7: {
     name: 'Typography',
@@ -232,41 +255,50 @@ export const customizeConfig = ({ options, updateOption, openCssEditor }) => ({
     action: (v) => updateOption({ globalFont: (v || 'Inter').trim() || 'Inter' }),
   },
   8: {
+    name: 'Navigation Scale',
+    desc: 'Scale navigation bar size (logo & font) globally.',
+    config: navScaleConfig,
+    value: find(navScaleConfig, (c) => c.value.navScale === (options.navScale ?? 1), 3),
+    type: 'select',
+    action: (a) => updateOption(a),
+  },
+  9: {
+    name: 'Apps per Page',
+    desc: 'Number of apps to show per page ("All" will show everything).',
+    config: appsPerPageConfig,
+    value: find(appsPerPageConfig, (c) => c.value.itemsPerPage === (options.itemsPerPage ?? 50), 3),
+    type: 'select',
+    action: (a) => updateOption(a),
+  },
+  10: {
     name: 'Performance Mode',
     desc: 'Disable heavy animations and app/media icon loading for faster performance.',
     value: !!options.performanceMode,
     type: 'switch',
     action: (b) => setTimeout(() => updateOption({ performanceMode: b }), 100),
   },
-  9: {
-    name: 'Custom Background URL',
-    desc: 'Set a custom background image URL (leave empty to use design presets).',
-    value: options.customBackgroundImage || '',
-    type: 'input',
-    action: (v) => {
-      const raw = String(v || '').trim();
-      const cleaned = raw
-        .replace(/^url\((.*)\)$/i, '$1')
-        .replace(/^['"]|['"]$/g, '')
-        .trim();
-      updateOption({ customBackgroundImage: cleaned });
-    },
+  11: {
+    name: 'Magic Pill',
+    desc: 'Enable the expanding info card on Ghost Home. When disabled, it just shows as text on the background.',
+    value: !!options.magicPill,
+    type: 'switch',
+    action: (b) => setTimeout(() => updateOption({ magicPill: b }), 100),
   },
-  10: {
+  12: {
     name: 'Sidebar Editor',
     desc: 'Add custom apps and manage sidebar toggles.',
     type: 'button',
     value: 'Open Sidebar Editor',
     action: openCssEditor?.openSidebarEditor,
   },
-  11: {
+  15: {
     name: 'Clock Format',
     desc: 'Use 12-hour or 24-hour time in the Ghost menu. Default is 12-hour.',
     value: !!options.clock24Hour,
     type: 'switch',
     action: (b) => setTimeout(() => updateOption({ clock24Hour: b }), 100),
   },
-  12: {
+  16: {
     name: 'Timezone Override',
     desc: 'Optional IANA timezone (example: America/New_York). Leave empty to auto-detect from your IP.',
     value: options.timezoneOverride || '',
@@ -274,14 +306,14 @@ export const customizeConfig = ({ options, updateOption, openCssEditor }) => ({
     placeholder: 'Auto (IP timezone)',
     action: (v) => updateOption({ timezoneOverride: (v || '').trim() || null }),
   },
-  13: {
+  17: {
     name: 'Use Your Location (IP)',
     desc: 'Use your IP-based location for menu weather.',
     value: options.weatherUseIpLocation !== false,
     type: 'switch',
     action: (b) => setTimeout(() => updateOption({ weatherUseIpLocation: b }), 100),
   },
-  14: {
+  18: {
     name: 'Weather Unit',
     desc: 'Choose the temperature unit shown in the Ghost menu weather.',
     config: weatherUnitConfig,
@@ -289,7 +321,7 @@ export const customizeConfig = ({ options, updateOption, openCssEditor }) => ({
     type: 'select',
     action: (a) => updateOption(a),
   },
-  15: {
+  19: {
     name: 'Weather Coords Override',
     desc: 'Optional coordinates when IP location is disabled (format: lat,lon).',
     value: options.weatherCoordsOverride || '',
@@ -298,7 +330,7 @@ export const customizeConfig = ({ options, updateOption, openCssEditor }) => ({
     action: (v) => updateOption({ weatherCoordsOverride: (v || '').trim() }),
     hidden: options.weatherUseIpLocation !== false,
   },
-  16: {
+  20: {
     name: 'Music Player',
     desc: 'What music player opens when music is opened normally.',
     config: musicPlayerConfig,
@@ -311,7 +343,7 @@ export const customizeConfig = ({ options, updateOption, openCssEditor }) => ({
     type: 'select',
     action: (a) => updateOption(a),
   },
-  17: {
+  21: {
     name: 'AI Provider',
     desc: 'What AI provider opens when you use Ghost AI.',
     config: aiProviderConfig,
@@ -324,7 +356,7 @@ export const customizeConfig = ({ options, updateOption, openCssEditor }) => ({
     type: 'select',
     action: (a) => updateOption(a),
   },
-  18: {
+  22: {
     name: 'Chat Provider',
     desc: 'What chat provider opens when you click the Chat button.',
     config: chatProviderConfig,
@@ -457,6 +489,7 @@ export const advancedConfig = ({ options, updateOption }) => ({
     type: 'select',
     action: (a) => updateOption(a),
   },
+
   5: {
     name: 'Remote Proxy Type',
     desc: 'Choose the protocol for your remote proxy server.',

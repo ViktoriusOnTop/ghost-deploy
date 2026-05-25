@@ -54,6 +54,13 @@ const DEFAULT_OPTIONS = {
   defaultAiProvider: '',
   defaultChatProvider: 'stoutchat',
   debugMode: false,
+  superPerformanceMode: false,
+  stealthMode: 0,
+  magicPill: false,
+  gradientText: false,
+  customAnimatedBackground: 'StarrySky',
+  animatedBgProps: {},
+  customSiteTitle: '',
 };
 
 const normalizeLegacyOptions = (stored) => {
@@ -109,6 +116,11 @@ const normalizeLegacyOptions = (stored) => {
 
   if (String(out.defaultMusicPlayer || '').toLowerCase() === 'monochrome') {
     out.defaultMusicPlayer = 'musicplayer';
+  }
+
+  // Migrate old 'stars' background name to 'StarrySky'
+  if (out.customAnimatedBackground === 'stars') {
+    out.customAnimatedBackground = 'StarrySky';
   }
 
   const sidebarToggles =
@@ -310,7 +322,7 @@ export const OptionsProvider = ({ children }) => {
 
   useEffect(() => {
     import('/src/utils/utils.js').then(({ ckOff }) => ckOff());
-  }, [options.tabName, options.tabIcon, options.clkOff]);
+  }, [options.tabName, options.tabIcon, options.clkOff, options.customSiteTitle]);
 
   useEffect(() => {
     import('/src/utils/utils.js').then(({ applyBeforeUnload }) => {

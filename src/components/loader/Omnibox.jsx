@@ -74,18 +74,17 @@ const Omnibox = () => {
   const getPreferredRawUrl = useCallback((tab, frameUrl) => {
     if (!tab) return '';
     const tabUrl = String(tab.url || '').trim();
-    if (!tabUrl) return String(frameUrl || '').trim();
+    const frame = String(frameUrl || '').trim();
+    if (frame && frame !== 'about:blank' && !frame.startsWith('ghost://') && !frame.startsWith('tabs://')) {
+      return frame;
+    }
+
+    if (!tabUrl) return frame;
     if (tabUrl === 'tabs://new') return tabUrl;
     const ghostDisplay = toGhostDisplayUrl(tabUrl);
     if (ghostDisplay) return tabUrl;
 
-    const frame = String(frameUrl || '').trim();
-    if (!frame) return tabUrl;
-    const tabProxied = isProcied(tabUrl);
-    const frameProxied = isProcied(frame);
-    if (!tabProxied || !frameProxied) return tabUrl;
-
-    return frame;
+    return frame || tabUrl;
   }, [options.prType, options.engine]);
 
   const isProcied = (url) => url?.includes('/uv/service/') || url?.includes('/scramjet/');
@@ -179,6 +178,7 @@ const Omnibox = () => {
     const raw = getPreferredRawUrl(activeTab, activeFrameUrl);
     const next = getDisplayUrl(raw, activeTab?.displayUrl);
     setInput(next);
+    if (inputRef.current) inputRef.current.textContent = next;
     updateIcon(raw);
   }, [activeTab?.id, activeTab?.url, activeTab?.displayUrl, activeFrameUrl, options.prType, options.engine, getPreferredRawUrl]);
 
@@ -359,17 +359,21 @@ const Omnibox = () => {
         }}
       >
         <Icon size="15" />
-        <input
+        <div
           id="ghost-omnibox-input"
           data-ghost-omnibox="1"
-          className="h-full w-full outline-0 text-[0.8rem] ml-2 pr-12"
-          placeholder={omniboxPlaceholder}
-          onSelect={() => setIcon(Search)}
-          onBlur={() => {
+          contentEditable="plaintext-only"
+          suppressContentEditableWarning
+          className="h-full w-full outline-0 text-[0.8rem] ml-2 pr-12 whitespace-nowrap overflow-hidden flex items-center empty:before:content-[attr(data-placeholder)] cursor-text"
+          data-placeholder={omniboxPlaceholder}
+          onMouseUp={() => setIcon(Search)}
+          onBlur={(e) => {
             isEditingRef.current = false;
             if (activeTab) {
               const raw = getPreferredRawUrl(activeTab, activeFrameUrl);
-              setInput(getDisplayUrl(raw, activeTab?.displayUrl));
+              const display = getDisplayUrl(raw, activeTab?.displayUrl);
+              setInput(display);
+              if (inputRef.current) inputRef.current.textContent = display;
               updateIcon(raw);
             }
           }}
@@ -377,10 +381,9 @@ const Omnibox = () => {
             isEditingRef.current = true;
             if (results.length > 0) setSuggestOpen(true);
           }}
-          value={input}
           ref={inputRef}
-          onChange={(e) => {
-            const next = e.target.value;
+          onInput={(e) => {
+            const next = e.currentTarget.textContent;
             suppressSuggestionsRef.current = false;
             setInput(next);
 
@@ -396,7 +399,8 @@ const Omnibox = () => {
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && activeTab && input.length !== 0) {
-              const typed = input.trim();
+              e.preventDefault();
+              const typed = inputRef.current.textContent.trim();
               const masked = String(activeTab.displayUrl || '').trim();
               if (masked && typed.toLowerCase() === masked.toLowerCase()) {
                 inputRef.current.blur();
@@ -430,7 +434,7 @@ const Omnibox = () => {
               setSuggestOpen(false);
             }
           }}
-        ></input>
+        />
         <button
           className={clsx(
             'h-7 w-7 rounded-md flex items-center justify-center absolute right-0.5 top-1/2 -translate-y-1/2',

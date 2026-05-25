@@ -9,7 +9,9 @@ import { OptionsProvider, useOptions } from './utils/optionsContext';
 import { getEffectiveShortcuts, eventToShortcut, isTypingTarget } from './utils/shortcuts';
 import { initPreload } from './utils/preload';
 import { designConfig as bgDesign } from './utils/config';
+import { applyStealthMode } from './utils/stealthMode';
 import DialogHost from './components/DialogHost';
+import AnimatedBackground from './components/AnimatedBackground';
 import './index.css';
 import 'nprogress/nprogress.css';
 
@@ -89,6 +91,10 @@ const ThemedApp = memo(() => {
   const [resolvedCustomBg, setResolvedCustomBg] = useState('');
   useTracking();
 
+  useEffect(() => {
+    applyStealthMode(options.stealthMode || 0);
+  }, [options.stealthMode]);
+
   const openInGhostBrowser = useCallback((url, title = 'New Tab') => {
     const rawUrl = String(url || '').trim();
     if (!rawUrl) return;
@@ -141,54 +147,7 @@ const ThemedApp = memo(() => {
     return () => document.removeEventListener('click', onDocumentClick, true);
   }, [openInGhostBrowser]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const raw = (options.customBackgroundImage || '').trim();
 
-    if (!raw) {
-      setResolvedCustomBg('');
-      return;
-    }
-
-    const cleaned = raw
-      .replace(/^url\((.*)\)$/i, '$1')
-      .replace(/^['"]|['"]$/g, '')
-      .trim();
-
-    const normalized = cleaned.startsWith('http://') || cleaned.startsWith('https://')
-      ? cleaned
-      : `https://${cleaned}`;
-
-    const direct = encodeURI(normalized);
-    const noProto = normalized.replace(/^https?:\/\//i, '');
-    const wsrv = `https://wsrv.nl/?url=${encodeURIComponent(noProto)}&n=-1`;
-    const thum = `https://image.thum.io/get/width/2560/noanimate/${direct}`;
-    const candidates = [direct, wsrv, thum];
-
-    const testImage = (src) =>
-      new Promise((resolve) => {
-        const image = new Image();
-        image.onload = () => resolve({ ok: true, width: image.naturalWidth, height: image.naturalHeight });
-        image.onerror = () => resolve({ ok: false, width: 0, height: 0 });
-        image.src = src;
-      });
-
-    (async () => {
-      for (const src of candidates) {
-        const result = await testImage(src);
-        if (cancelled) return;
-        if (result.ok && result.width >= 320 && result.height >= 180) {
-          setResolvedCustomBg(src);
-          return;
-        }
-      }
-      setResolvedCustomBg('');
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [options.customBackgroundImage]);
 
   useEffect(() => {
     const fontName = (options.globalFont || 'Inter').trim();
@@ -239,18 +198,18 @@ const ThemedApp = memo(() => {
     const overlayAlpha = 100 - (Number.isFinite(transpValue) ? Math.max(0, Math.min(100, transpValue)) : 20);
 
     // We only apply the dimmer gradient if overlayAlpha > 0 and there's actually a background to dim
-    const hasBg = resolvedCustomBg || bgDesignConfig !== 'none';
+    const hasBg = bgDesignConfig !== 'none';
     const overlayGradient = hasBg && overlayAlpha > 0
       ? `linear-gradient(color-mix(in srgb, var(--ghost-bg-color) ${overlayAlpha}%, transparent), color-mix(in srgb, var(--ghost-bg-color) ${overlayAlpha}%, transparent))`
       : '';
 
-    const finalBgImageHtml = resolvedCustomBg
-      ? (overlayGradient ? `${overlayGradient}, url("${resolvedCustomBg}")` : `url("${resolvedCustomBg}")`)
-      : 'none';
+    const backgrounds = [];
+    if (overlayGradient) backgrounds.push(overlayGradient);
+    if (hasBg) {
+      backgrounds.push(bgDesignConfig);
+    }
 
-    const finalBgImageBody = resolvedCustomBg
-      ? (overlayGradient ? `${overlayGradient}, url("${resolvedCustomBg}")` : `url("${resolvedCustomBg}")`)
-      : (bgDesignConfig !== 'none' ? (overlayGradient ? `${overlayGradient}, ${bgDesignConfig}` : bgDesignConfig) : 'none');
+    const finalBgImage = backgrounds.length > 0 ? backgrounds.join(', ') : 'none';
 
     return `
       :root {
@@ -271,23 +230,35 @@ const ThemedApp = memo(() => {
       ${options.customGlobalCss || ''}
       ${options.theme === 'custom' ? (options.customThemeCss || '') : ''}
 
+      ${options.gradientText ? `
+      h1, h2, h3, h4, h5, h6 {
+        background-image: linear-gradient(135deg, ${options.navItemActive || '#ffffff'}, ${options.switchEnabledColor || '#a0b0c8'}) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+        color: transparent !important;
+        display: inline-block;
+      }
+      ` : ''}
+
       html {
-        background-image: ${finalBgImageHtml};
-        background-size: ${resolvedCustomBg ? '100% 100% !important' : 'auto'};
-        background-repeat: ${resolvedCustomBg ? 'no-repeat !important' : 'repeat'};
+        background-image: ${options.customAnimatedBackground ? 'none' : finalBgImage};
+        background-size: ${bgDesignConfig.includes('url(') ? 'cover !important' : 'auto'};
+        background-repeat: ${bgDesignConfig.includes('url(') ? 'no-repeat !important' : 'repeat'};
         background-position: center;
         background-attachment: fixed;
+        background-color: ${options.customAnimatedBackground ? 'transparent' : (options.bgColor || '#111827')};
         opacity: 1 !important;
       }
 
       body {
         color: ${options.siteTextColor || '#a0b0c8'};
-        background-image: ${finalBgImageBody};
-        background-size: ${resolvedCustomBg ? '100% 100% !important' : options.bgDesign === 'grid' ? '24px 24px' : 'auto'};
-        background-repeat: ${resolvedCustomBg ? 'no-repeat !important' : 'repeat'};
+        background-image: ${options.customAnimatedBackground ? 'none' : finalBgImage};
+        background-size: ${bgDesignConfig.includes('url(') ? 'cover !important' : options.bgDesign === 'grid' ? '24px 24px' : 'auto'};
+        background-repeat: ${bgDesignConfig.includes('url(') ? 'no-repeat !important' : 'repeat'};
         background-position: center;
         background-attachment: fixed;
-        background-color: ${options.bgColor || '#111827'};
+        background-color: ${options.customAnimatedBackground ? 'transparent' : (options.bgColor || '#111827')};
         font-family: '${(options.globalFont || 'Inter').replace(/'/g, '')}', Inter, system-ui, -apple-system, sans-serif;
         opacity: 1 !important;
       }
@@ -341,15 +312,19 @@ const ThemedApp = memo(() => {
     options.globalFont,
     options.performanceMode,
     options.logoColor,
-    options.customGlobalCss,
     options.customThemeCss,
     options.theme,
+    options.gradientText,
+    options.navItemActive,
+    options.switchEnabledColor,
     resolvedCustomBg,
     options.bgTransparency,
+    options.customAnimatedBackground,
   ]);
 
   return (
     <>
+      <AnimatedBackground />
       <Routing pages={pages} />
       <ReturnToBrowserHint />
       <DialogHost />

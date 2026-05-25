@@ -5,23 +5,42 @@ import { createId } from '/src/utils/id';
 
 const BROWSER_HISTORY_KEY = 'ghostBrowserHistory';
 
+const PROFILE_ACTIVE_KEY = 'ghostBrowserActiveProfileId';
+
 const tabStorage = {
   getItem: (name) => {
     let opts = {};
     try { opts = JSON.parse(localStorage.getItem('options') || '{}'); } catch { }
     if (opts.saveTabs === false) return null;
-    return localStorage.getItem(name);
+    const activeProfileId = localStorage.getItem(PROFILE_ACTIVE_KEY) || 'default';
+    let val = localStorage.getItem(`${activeProfileId}_${name}`);
+    // Migration: only for the 'default' fallback profile (no real profile set yet),
+    // copy old global ghostLoaderSession into the profile-keyed storage.
+    // Real profiles created by createProfile have their storage pre-seeded,
+    // so this should never run for them.
+    if (val === null && name === 'ghostLoaderSession' && activeProfileId === 'default') {
+      const legacy = localStorage.getItem(name);
+      if (legacy) {
+        localStorage.setItem(`${activeProfileId}_${name}`, legacy);
+        val = legacy;
+      }
+    }
+    return val;
   },
   setItem: (name, value) => {
     let opts = {};
     try { opts = JSON.parse(localStorage.getItem('options') || '{}'); } catch { }
+    const activeProfileId = localStorage.getItem(PROFILE_ACTIVE_KEY) || 'default';
     if (opts.saveTabs === false) {
-      localStorage.removeItem(name);
+      localStorage.removeItem(`${activeProfileId}_${name}`);
       return;
     }
-    localStorage.setItem(name, value);
+    localStorage.setItem(`${activeProfileId}_${name}`, value);
   },
-  removeItem: (name) => localStorage.removeItem(name),
+  removeItem: (name) => {
+    const activeProfileId = localStorage.getItem(PROFILE_ACTIVE_KEY) || 'default';
+    localStorage.removeItem(`${activeProfileId}_${name}`);
+  },
 };
 
 const decodeHistoryUrl = (url) => {
