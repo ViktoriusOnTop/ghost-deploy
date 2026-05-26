@@ -225,7 +225,7 @@ const fetchLuminSdkGames = async () => {
 
       writeCachedLuminGames(dedupedGames);
 
-      // Resolve only the first set of icons to avoid overloading the SDK/network.
+      // resolve only the first set of icons to avoid overloading the sdk/network.
       const hydratedGames = dedupedGames.map((game) => ({ ...game }));
       if (typeof window.Lumin?.getImageUrl === 'function') {
         const preloadCount = Math.min(LUMIN_ICON_PRELOAD_LIMIT, hydratedGames.length);

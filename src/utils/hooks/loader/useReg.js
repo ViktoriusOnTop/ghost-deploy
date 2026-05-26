@@ -83,8 +83,7 @@ export default function useReg() {
                         out.push(key);
                         const combo = out.join('+');
 
-                        const hasModifier = e.ctrlKey || e.altKey || e.metaKey;
-                        if (hasModifier || shortcuts.includes(combo) || combo.startsWith('F11') || combo.startsWith('F12') || combo.startsWith('F5')) {
+                        if (shortcuts.includes(combo) || combo.startsWith('F11') || combo.startsWith('F12') || combo.startsWith('F5')) {
                           e.preventDefault();
                           e.stopPropagation();
                           e.stopImmediatePropagation?.();
@@ -151,11 +150,14 @@ export default function useReg() {
         }
       }
 
+      const backupWisp = normalizeWispEndpoint('wss://wisp.mercurywork.shop/');
+
       const uniqueWispCandidates = [
         manualWisp,
         discoveredWisp,
         localOriginWisp,
         defaultWisp,
+        backupWisp,
       ].filter((candidate, index, arr) => candidate && !isInvalidWisp(candidate) && arr.indexOf(candidate) === index);
 
       const wispUrl = uniqueWispCandidates[0] || null;
@@ -221,7 +223,7 @@ export default function useReg() {
               }),
             ]);
 
-            // Any HTTP status means upstream connectivity is working through the transport.
+            // any http status means upstream connectivity is working through the transport.
             if (response && Number.isFinite(response.status)) {
               return;
             }

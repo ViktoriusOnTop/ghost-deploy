@@ -12,9 +12,9 @@ const Zoom = () => {
   const actab = tabs.find((tab) => tab.active);
   const currentz = actab ? zoomLevels[actab.id] || 100 : 100;
   const isNewTab = actab?.url === 'tabs://new';
-  // Allow zoom for all tabs, including ghost://home (NewTab). When on the home
-  // page there is no iframe, so we pass null as the frame ref – the Viewer reads
-  // zoomLevels and applies a CSS transform to the NewTab wrapper instead.
+  // allow zoom for all tabs, including ghost://home (newtab). when on the home
+  // page there is no iframe, so we pass null as the frame ref  the viewer reads
+  // zoomlevels and applies a css transform to the newtab wrapper instead.
   const canZoom = !!actab;
   const frameRef = isNewTab ? null : activeFrameRef;
 

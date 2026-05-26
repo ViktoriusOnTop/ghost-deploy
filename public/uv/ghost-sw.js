@@ -1,9 +1,7 @@
 /*global UVServiceWorker,__uv$config*/
 /*
- * Ghost Proxy – UV service-worker.
- * Custom wrapper around UV's stock sw with:
- *  - skipWaiting / clients.claim for instant activation
- *  - Graceful fallback for non-UV cross-origin requests (avoids CORS errors)
+ * ghost proxy uv sw
+ * custom sw wrapper to make it load instantly and fallback nicely
  */
 importScripts('uv.bundle.js');
 importScripts('uv.config.js');
@@ -18,9 +16,7 @@ async function handleRequest(event) {
   if (uv.route(event)) {
     return await uv.fetch(event);
   }
-  // Only fetch same-origin or relative requests directly.
-  // Cross-origin requests that aren't UV-routed must be blocked,
-  // otherwise they can escape proxying if route activation fails.
+  // only fetch same origin directly. block external stuff so they dont escape proxying.
   const url = new URL(event.request.url);
   if (url.origin === location.origin) {
     return await fetch(event.request);
@@ -33,10 +29,10 @@ async function handleRequest(event) {
 }
 
 self.addEventListener('fetch', (event) => {
-  // Let Ghost AI API requests pass through to the browser directly
-  // so CORS works properly and the response is not opaque.
+  // let ai requests go thru directly so cors doesnt break
   const url = new URL(event.request.url);
   if (url.hostname === 'api.edisonlearningcenter.me') return;
 
   event.respondWith(handleRequest(event));
 });
+

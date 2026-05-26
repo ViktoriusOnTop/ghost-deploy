@@ -1,5 +1,5 @@
 /* ============================================
-   WarpDesk — Design System & Styles
+   warpdesk  design system & styles
    ============================================ */
 
 :root {
@@ -78,7 +78,7 @@ body {
     overflow: hidden;
 }
 
-/* ── Background Effects ───────────────── */
+/*  background effects  */
 
 .bg-grid {
     position: fixed;
@@ -128,7 +128,7 @@ body {
     }
 }
 
-/* ── Login Container ──────────────────── */
+/*  login container  */
 
 .login-container {
     display: flex;
@@ -398,7 +398,7 @@ body.dark .device-item {
     background: #e03131;
 }
 
-/* ── Login Card ───────────────────────── */
+/*  login card  */
 
 .login-card {
     width: 100%;
@@ -422,7 +422,7 @@ body.dark .device-item {
     }
 }
 
-/* ── Logo Section ─────────────────────── */
+/*  logo section  */
 
 .logo-section {
     text-align: center;
@@ -465,7 +465,7 @@ body.dark .device-item {
     font-weight: 400;
 }
 
-/* ── Form ─────────────────────────────── */
+/*  form  */
 
 #login-form {
     display: flex;
@@ -510,7 +510,7 @@ body.dark .device-item {
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
 }
 
-/* ── Error Message ────────────────────── */
+/*  error message  */
 
 .error-message {
     display: flex;
@@ -553,7 +553,7 @@ body.dark .device-item {
     }
 }
 
-/* ── Submit Button ────────────────────── */
+/*  submit button  */
 
 button[type="submit"] {
     width: 100%;
@@ -615,7 +615,7 @@ button[type="submit"]:disabled {
     }
 }
 
-/* ── Footer ───────────────────────────── */
+/*  footer  */
 
 .footer-info {
     text-align: center;
@@ -629,7 +629,7 @@ button[type="submit"]:disabled {
     color: var(--text-muted);
 }
 
-/* ── Security Badge ───────────────────── */
+/*  security badge  */
 
 .security-badge {
     display: inline-flex;
@@ -764,7 +764,7 @@ button[type="submit"]:disabled {
     border-color: var(--accent);
 }
 
-/* ── Responsive ───────────────────────── */
+/*  responsive  */
 
 @media (max-width: 480px) {
     .login-container {

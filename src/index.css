@@ -64,7 +64,7 @@ body {
   animation: ghostFadeDown 220ms ease-in forwards;
 }
 
-/* Prevent hover outline for popup containers that opt out */
+/* prevent hover outline for popup containers that opt out */
 .ai-settings-no-outline:hover {
   border-color: transparent !important;
   box-shadow: none !important;

@@ -101,7 +101,7 @@ export const isInternalGhostTabUrl = (urlValue, iframeUrlValue = '') => {
   const iframe = String(iframeUrlValue || '').trim();
   if (!raw && !iframe) return true;
 
-  // The tab URL is the source of truth. Iframe URLs can be stale during transitions.
+  // tab url is truth iframe might lag
   if (raw) {
     return isInternalGhostCandidate(raw);
   }
@@ -314,31 +314,7 @@ const scrwlist = new Set([
   )
 ]);
 
-const SCRAMJET_FORCE_UV_HOSTS = new Set([
-  'discord.com',
-  'spotify.com',
-  'accounts.spotify.com',
-  'youtube.com',
-  'www.youtube.com',
-]);
 
-const shouldForceUvRoute = (urlValue) => {
-  try {
-    const hostname = new URL(String(urlValue || '')).hostname.replace(/^www\./i, '').toLowerCase();
-    if (!hostname) return false;
-
-    let dynamicHosts = [];
-    try {
-      dynamicHosts = JSON.parse(localStorage.getItem('ghostForceUvHosts') || '[]');
-    } catch {}
-
-    return [...SCRAMJET_FORCE_UV_HOSTS, ...dynamicHosts].some((blockedHost) =>
-      hostname === blockedHost || hostname.endsWith(`.${blockedHost}`),
-    );
-  } catch {
-    return false;
-  }
-};
 
 export const process = (input, decode = false, prType, engine = "https://duckduckgo.com/?q=") => {
   const rawInput = String(input || '').trim();
@@ -365,12 +341,7 @@ export const process = (input, decode = false, prType, engine = "https://duckduc
       prefix = '/uv/service/';
       break;
     case 'scr': {
-      const urlCheckScr = check(input, engine);
-      if (shouldForceUvRoute(urlCheckScr)) {
-        prefix = '/uv/service/';
-      } else {
-        prefix = '/scramjet/';
-      }
+      prefix = '/scramjet/';
       break;
     }
     default: {
@@ -384,10 +355,6 @@ export const process = (input, decode = false, prType, engine = "https://duckduc
         break;
       }
       const url = check(input, engine);
-      if (shouldForceUvRoute(url)) {
-        prefix = '/uv/service/';
-        break;
-      }
       const match = [...scrwlist].some(d => url.includes(d));
       prefix = match && globalThis.__ghostScramjetReady ? '/scramjet/' : '/uv/service/';
     }

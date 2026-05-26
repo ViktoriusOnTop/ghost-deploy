@@ -106,6 +106,15 @@ export const privacyConfig = ({ options, updateOption, openPanic }) => ({
     hidden: options.tabName !== 'Custom',
     action: (v) => updateOption({ customSiteTitle: v }),
   },
+  '1b': {
+    name: 'Custom Site Favicon',
+    desc: 'Enter a URL for your custom site favicon.',
+    value: options.customSiteIcon || '',
+    type: 'input',
+    placeholder: 'https://example.com/favicon.ico',
+    hidden: options.tabName !== 'Custom',
+    action: (v) => updateOption({ customSiteIcon: v }),
+  },
   2: {
     name: 'Stealth Mode',
     desc: 'Obfuscates page text with lookalike characters to bypass screen monitoring and filters.',
@@ -458,7 +467,7 @@ export const advancedConfig = ({ options, updateOption }) => ({
   2: {
     name: 'Wisp Config',
     desc: 'Configure the websocket server location.',
-    // Empty custom value falls back to the fixed default endpoint.
+    // empty custom value falls back to the fixed default endpoint.
     value: options.wServer || '',
     type: 'input',
     action: (b) => {

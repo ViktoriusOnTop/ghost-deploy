@@ -114,13 +114,13 @@ const Omnibox = () => {
   }, [activeTab?.url, options.bookmarks, options.prType, options.engine]);
 
   useEffect(() => {
-    // Clear search suggestions when the active tab changes
+    // clear search suggestions when the active tab changes
     setResults([]);
     setSuggestOpen(false);
     latestQuery.current = '';
-    // Also reset input if not editing
+    // also reset input if not editing
     if (!isEditingRef.current && activeTab) {
-      // logic is handled in other useEffect, but ensure suggestions are gone.
+      // logic is handled in other useeffect, but ensure suggestions are gone.
     }
   }, [activeTab?.id]);
 

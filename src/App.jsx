@@ -197,7 +197,7 @@ const ThemedApp = memo(() => {
     const transpValue = Number(options.bgTransparency ?? 20);
     const overlayAlpha = 100 - (Number.isFinite(transpValue) ? Math.max(0, Math.min(100, transpValue)) : 20);
 
-    // We only apply the dimmer gradient if overlayAlpha > 0 and there's actually a background to dim
+    // we only apply the dimmer gradient if overlayalpha > 0 and theres actually a background to dim
     const hasBg = bgDesignConfig !== 'none';
     const overlayGradient = hasBg && overlayAlpha > 0
       ? `linear-gradient(color-mix(in srgb, var(--ghost-bg-color) ${overlayAlpha}%, transparent), color-mix(in srgb, var(--ghost-bg-color) ${overlayAlpha}%, transparent))`

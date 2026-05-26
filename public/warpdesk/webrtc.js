@@ -1,6 +1,6 @@
 /**
- * WarpDesk - WebRTC Client
- * Lower-latency stream path: render directly to <video> instead of canvas blitting.
+ * warpdesk webrtc
+ * render direct to video for speed
  */
 
 (function () {

@@ -1,4 +1,4 @@
-// Default prop configs for each ReactBits animated background
+// default prop configs for each reactbits animated background
 export const BACKGROUND_CONFIGS = {
   StarrySky: { id: 'StarrySky', label: 'Starry Sky', props: {} },
   Aurora: { id: 'Aurora', label: 'Aurora', props: { colorStops: ['#5227FF','#7cff67','#5227FF'], amplitude: 1.0, blend: 0.5 } },

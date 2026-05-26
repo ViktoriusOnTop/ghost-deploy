@@ -173,7 +173,7 @@ export default function BackgroundEditor({ open, onClose }) {
         visible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-[0.965] translate-y-2'
       )} style={{ backgroundColor: options.quickModalBgColor || options.menuColor || '#1a252f' }}>
 
-        {/* Header */}
+        {/* header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
           <h2 className="text-lg font-semibold">Background Editor</h2>
           <div className="flex items-center gap-2">
@@ -186,9 +186,9 @@ export default function BackgroundEditor({ open, onClose }) {
           </div>
         </div>
 
-        {/* Body */}
+        {/* body */}
         <div className="flex flex-1 overflow-hidden" style={{ minHeight: 0 }}>
-          {/* Left: list */}
+          {/* left: list */}
           <div className="w-[220px] border-r border-white/10 flex flex-col shrink-0">
             <div className="p-3 border-b border-white/5">
               <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
@@ -209,9 +209,9 @@ export default function BackgroundEditor({ open, onClose }) {
             </div>
           </div>
 
-          {/* Right: preview + config */}
+          {/* right: preview + config */}
           <div className="flex-1 flex flex-col min-w-0">
-            {/* Preview */}
+            {/* preview */}
             <div className="relative min-h-[220px] max-h-[280px] flex-shrink-0 border-b border-white/10 bg-black/40">
               <div className="absolute inset-0 overflow-hidden">
                 <PreviewRenderer bgId={selectedId} props={mergedProps} />
@@ -221,7 +221,7 @@ export default function BackgroundEditor({ open, onClose }) {
               </div>
             </div>
 
-            {/* Props Config */}
+            {/* props config */}
             <div className="flex-1 overflow-y-auto p-4 space-y-1">
               {selectedId && Object.keys(defaultProps).length > 0 ? (
                 <>
@@ -247,7 +247,7 @@ export default function BackgroundEditor({ open, onClose }) {
               )}
             </div>
 
-            {/* Footer */}
+            {/* footer */}
             <div className="flex items-center gap-2 px-4 py-3 border-t border-white/10">
               <button onClick={handleApplyAndClose} className="flex-1 h-10 rounded-lg bg-[#2f7fff44] hover:bg-[#2f7fff66] text-sm font-medium transition-colors">Apply & Close</button>
               <button onClick={handleApply} className="h-10 px-5 rounded-lg border border-white/15 hover:bg-[#ffffff10] text-sm transition-colors">Apply</button>

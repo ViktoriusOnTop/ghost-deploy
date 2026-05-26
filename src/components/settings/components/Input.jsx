@@ -20,7 +20,7 @@ const TextInput = ({
   const isLightMode = mode ? mode === 'light' : options?.type === 'light';
   const [value, setValue] = useState(defValue ?? '');
 
-  // Sync with defValue if it changes from outside
+  // sync with defvalue if it changes from outside
   useEffect(() => {
     setValue(defValue ?? '');
   }, [defValue]);

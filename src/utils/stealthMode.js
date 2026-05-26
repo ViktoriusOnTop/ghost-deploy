@@ -28,7 +28,7 @@ export const obfuscateStr = (str, level) => {
   let count = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str[i];
-    // Convert back to original first if it's already obfuscated (to prevent double mapping issues if any)
+    // convert back to original first if its already obfuscated (to prevent double mapping issues if any)
     const baseChar = reverseMap[char] || char;
 
     if (charMap[baseChar]) {
@@ -118,8 +118,8 @@ export const applyStealthMode = (level) => {
     
     mutations.forEach(mutation => {
       if (mutation.type === 'characterData') {
-        // If react or something changes text, update our original reference
-        // Wait, if it changed, we should deobfuscate it to get the real new text
+        // if react or something changes text, update our original reference
+        // wait, if it changed, we should deobfuscate it to get the real new text
         mutation.target._originalText = deobfuscateStr(mutation.target.nodeValue);
         processNode(mutation.target);
       } else if (mutation.type === 'childList') {

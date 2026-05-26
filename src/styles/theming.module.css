@@ -304,7 +304,7 @@
   --result-hover: #7dd6a222;
 }
 
-/* Custom theme — CSS variables are injected via :root in App.jsx when active */
+/* custom theme  css variables are injected via :root in app.jsx when active */
 .theme-custom {}
 
 .nav-backgroundColor {

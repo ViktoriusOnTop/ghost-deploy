@@ -14,9 +14,9 @@ const tabStorage = {
     if (opts.saveTabs === false) return null;
     const activeProfileId = localStorage.getItem(PROFILE_ACTIVE_KEY) || 'default';
     let val = localStorage.getItem(`${activeProfileId}_${name}`);
-    // Migration: only for the 'default' fallback profile (no real profile set yet),
-    // copy old global ghostLoaderSession into the profile-keyed storage.
-    // Real profiles created by createProfile have their storage pre-seeded,
+    // migration: only for the 'default' fallback profile (no real profile set yet),
+    // copy old global ghostloadersession into the profile-keyed storage.
+    // real profiles created by createprofile have their storage pre-seeded,
     // so this should never run for them.
     if (val === null && name === 'ghostLoaderSession' && activeProfileId === 'default') {
       const legacy = localStorage.getItem(name);
@@ -173,7 +173,7 @@ const store = create(
       showUI: true,
       closedTabs: [],
       zoomLevels: {},
-      //only used if isStaticBuild == true
+      //only used if isstaticbuild == true
       wispStatus: null,
       setWispStatus: (bool) => set({ wispStatus: bool }),
       toggleUI: () => set((state) => ({ showUI: !state.showUI })),
@@ -266,7 +266,7 @@ const store = create(
         set((state) => ({
           tabs: state.tabs.map((tab) => ({ ...tab, active: tab.id === tabId })),
         })),
-      //this makes the tab BEFORE The matching tab active (all others false)
+      //this makes the tab before the matching tab active (all others false)
       setLastActive: (tabId) =>
         set((state) => {
           const index = state.tabs.findIndex((tab) => tab.id === tabId);
@@ -290,7 +290,7 @@ const store = create(
                 return tab;
               }
 
-              //FORWARD history gets removed -- & add new url
+              //forward history gets removed -- & add new url
               const newHistory = [...tab.history.slice(0, tab.historyIndex + 1), normalizedUrl];
               appendBrowserHistory(normalizedUrl, tab.title || 'New Tab');
               return {

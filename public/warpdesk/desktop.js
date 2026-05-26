@@ -1,7 +1,5 @@
-/**
- * WarpDesk — Desktop Session Controller
- * Validates session, manages fullscreen, settings overlay, clipboard, and terminal.
- */
+// warpdesk desktop session
+// handles overlays, fullscreen, copy-paste, terminal etc
 
 (function () {
     'use strict';
@@ -263,7 +261,7 @@
         }
     }
 
-    // --- Core button events ---
+    // --- core button events ---
     window.addEventListener('warpdesk-stream-ready', () => {
         streamReady = true;
         setStatus('', true);
@@ -328,7 +326,7 @@
         quitBtn.addEventListener('click', () => disconnect(true));
     }
 
-    // --- Settings Overlay Logic ---
+    // --- settings overlay logic ---
     function closeSettingsPanel() {
         if (document.pointerLockElement) {
             try { document.exitPointerLock(); } catch (_) { }
@@ -407,7 +405,7 @@
         });
     }
 
-    // Tabs
+    // tabs
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabPanes = document.querySelectorAll('.tab-pane');
 
@@ -420,7 +418,7 @@
         });
     });
 
-    // --- Data Channel Dispatchers ---
+    // --- data channel dispatchers ---
     applyVideoSettingsBtn.addEventListener('click', async () => {
         const fps = parseInt(document.getElementById('setting-fps').value, 10);
         const scale = parseInt(document.getElementById('setting-scale').value, 10);
@@ -452,7 +450,7 @@
                         }
                     }
                 } catch (_) {
-                    // Fallback to data-channel path below.
+                    // fallback to data-channel path below.
                 }
             }
             if (!msg) {
@@ -503,7 +501,7 @@
                         }
                     }
                 } catch (_) {
-                    // Fallback to data-channel path below.
+                    // fallback to data-channel path below.
                 }
             }
             if (!msg) {
@@ -536,7 +534,7 @@
             }
             setTabStatus(videoStatus, 'Loaded current agent settings', 'success');
         } catch (_) {
-            // Best-effort sync; leave current defaults if agent is not ready yet.
+            // best-effort sync; leave current defaults if agent is not ready yet.
         }
     }
 
@@ -669,7 +667,7 @@
         appendTerminalLine('Terminal cleared.', '#00ffaa');
     });
 
-    // --- Boot ---
+    // --- boot ---
     setTabStatus(clipboardStatus, 'Idle', 'neutral');
     setTabStatus(terminalStatus, 'Idle', 'neutral');
     setTabStatus(videoStatus, 'Idle', 'neutral');

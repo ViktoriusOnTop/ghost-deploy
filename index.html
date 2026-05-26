@@ -3,11 +3,36 @@
   <head>
     <meta charset="UTF-8" />
     <title>Ghost</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="icon" id="ghost-favicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path fill='%23e8e3dc' d='M16 2C9.4 2 4 7.4 4 14v14l4-4 4 4 4-4 4 4 4-4 4 4V14C28 7.4 22.6 2 16 2z'/><circle cx='12' cy='14' r='2' fill='%23333'/><circle cx='20' cy='14' r='2' fill='%23333'/></svg>" />
+    <script>
+      // sync favicon run early to stop flash.
+      // the link tag above uses an inline svg so chrome's favicon cache can never flash a stale icon.
+      (function(){
+        try {
+          var op = JSON.parse(localStorage.getItem('options') || '{}');
+          // migrate stale /favicon.ico references
+          if (op.tabIcon && op.tabIcon.indexOf('/favicon.ico') === 0) {
+            op.tabIcon = '/ghost-icon.ico?v=3';
+            localStorage.setItem('options', JSON.stringify(op));
+          }
+          var link = document.getElementById('ghost-favicon');
+          if (!link) return;
+          var icon;
+          if (op.tabName === 'Custom' && op.customSiteIcon) {
+            icon = op.customSiteIcon;
+          } else if (op.tabIcon && op.tabIcon.indexOf('/favicon.ico') !== 0) {
+            icon = op.tabIcon;
+          } else {
+            icon = '/ghost-icon.ico?v=3';
+          }
+          link.href = icon;
+          if (op.tabName && op.tabName !== 'Ghost') {
+            var t = op.tabName === 'Custom' ? (op.customSiteTitle || 'Ghost') : op.tabName;
+            document.title = t;
+          }
+        } catch(e) {}
+      })();
+    </script>
     <meta name="viewport" content="initial-scale=1, width=device-width" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-HWLK0PZVBM"></script>
     <script>

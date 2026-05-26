@@ -162,7 +162,7 @@ const TabBar = () => {
         };
         localStorage.setItem(PROFILE_STORE_KEY, JSON.stringify([initial]));
         localStorage.setItem(PROFILE_ACTIVE_KEY, initial.id);
-        // Copy Zustand session from 'default' key to the new profile's key
+        // copy zustand session from 'default' key to the new profile's key
         const defaultSession = localStorage.getItem('default_ghostLoaderSession');
         if (defaultSession) {
           localStorage.setItem(`${initial.id}_ghostLoaderSession`, defaultSession);
@@ -226,12 +226,12 @@ const TabBar = () => {
     };
     const next = [...profiles, nextProfile];
     
-    // Save to localStorage
+    // save to localstorage
     localStorage.setItem(PROFILE_STORE_KEY, JSON.stringify(next));
     setProfiles(next);
     setNewProfileName('');
 
-    // Pre-seed this profile's Zustand storage with blank tabs
+    // seed this profile's zustand storage with blank tabs
     try {
       const sessionKey = `${nextProfile.id}_ghostLoaderSession`;
       const session = {
@@ -241,13 +241,13 @@ const TabBar = () => {
       localStorage.setItem(sessionKey, JSON.stringify(session));
       localStorage.setItem(getSavedTabsKey(nextProfile.id), JSON.stringify({ tabs: initialTabs }));
     } catch {}
-    // Profile is created — user can click it to switch when ready
+    // profile is created  user can click it to switch when ready
   };
 
   const switchProfile = (targetId) => {
     if (!targetId || targetId === activeProfileId) return;
 
-    // Read profiles from localStorage to avoid stale React state closures
+    // read profiles from localstorage to avoid stale react state closures
     let currentProfiles;
     try {
       currentProfiles = JSON.parse(localStorage.getItem(PROFILE_STORE_KEY) || '[]');
@@ -255,14 +255,14 @@ const TabBar = () => {
       currentProfiles = profiles;
     }
 
-    // Save current profile's live tabs
+    // save current profile's live tabs
     const liveTabs = getLiveTabsSnapshot();
     try {
       localStorage.setItem(SAVED_TABS_KEY, JSON.stringify({ tabs: liveTabs }));
       localStorage.setItem(getSavedTabsKey(activeProfileId), JSON.stringify({ tabs: liveTabs }));
     } catch { }
 
-    // Also save current tabs into Zustand's profile-keyed storage
+    // also save current tabs into zustand's profile-keyed storage
     try {
       const currentSessionKey = `${activeProfileId}_ghostLoaderSession`;
       let currentSession = { state: {}, version: 0 };
@@ -319,8 +319,8 @@ const TabBar = () => {
     persistProfiles(next, targetId);
     applyStorageSnapshot(target.snapshot || {});
     
-    // CRITICAL: Write the target's tabs into the Zustand storage key
-    // so that after reload, Zustand hydrates the correct tabs for this profile.
+    // critical: write the target's tabs into the zustand storage key
+    // so that after reload, zustand hydrates the correct tabs for this profile.
     try {
       const sessionKey = `${targetId}_ghostLoaderSession`;
       const session = {
@@ -498,7 +498,7 @@ const TabBar = () => {
     return () => clearInterval(interval);
   }, [activeProfileId, profiles.length]);
 
-  // Instant tab-save: subscribe to loaderStore changes so tab updates persist immediately
+  // instant tab-save: subscribe to loaderstore changes so tab updates persist immediately
   useEffect(() => {
     if (!activeProfileId) return;
     let debounceTimer = null;

@@ -37,9 +37,32 @@ export const ckOff = () => {
   const op = JSON.parse(localStorage.options || '{}');
   if (typeof op.tabName === 'string' && op.tabName.startsWith('v5-')) {
     op.tabName = 'Ghost';
-    op.tabIcon = '/ghost.ico';
+    op.tabIcon = '/ghost-icon.ico?v=3';
     localStorage.setItem('options', JSON.stringify(op));
   }
+  // fix old favicon
+  if (op.tabIcon === '/favicon.ico' || (op.tabIcon && op.tabIcon.startsWith('/favicon.ico'))) {
+    op.tabIcon = '/ghost-icon.ico?v=3';
+    localStorage.setItem('options', JSON.stringify(op));
+  }
+
+  // sync set favicon right away so it doesnt flash
+  try {
+    const immediateIcon = op.tabName === 'Custom'
+      ? (op.customSiteIcon || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>')
+      : (op.tabIcon || '/ghost-icon.ico?v=3');
+    const immediateTitle = (op.tabName === 'Custom' ? op.customSiteTitle : op.tabName) || 'Ghost';
+    document.title = immediateTitle;
+    let favicons = document.querySelectorAll("link[rel~='icon']");
+    if (favicons.length === 0) {
+      const lnk = document.createElement('link');
+      lnk.rel = 'icon';
+      document.head.appendChild(lnk);
+      favicons = [lnk];
+    }
+    favicons.forEach(f => f.setAttribute('href', immediateIcon));
+  } catch (_) {}
+
   import('./config.js').then(({ meta }) => {
     const { tabName: t, tabIcon: i } = op;
     const { tabName: ogName, tabIcon: ogIcon } = meta[0].value;
@@ -81,13 +104,13 @@ export const ckOff = () => {
     visibility && hostWindow.document?.removeEventListener('visibilitychange', visibility);
 
     const cloakedTitle = (t === 'Custom' ? op.customSiteTitle : t) || ogName;
-    const cloakedIcon = iconsDisabled ? '' : (t === 'Custom' ? '' : (i || ogIcon));
+    const cloakedIcon = iconsDisabled ? '' : (t === 'Custom' ? op.customSiteIcon : (i || ogIcon));
 
     if (op.clkOff && (cloakedTitle !== ogName || cloakedIcon !== ogIcon)) {
       const applyCloak = () => {
         const latest = JSON.parse(localStorage.options || '{}');
         const applyTitle = (latest.tabName === 'Custom' ? latest.customSiteTitle : latest.tabName) || ogName;
-        const applyIcon = latest.tabName === 'Custom' ? '' : (latest.tabIcon || ogIcon);
+        const applyIcon = latest.tabName === 'Custom' ? latest.customSiteIcon : (latest.tabIcon || ogIcon);
         set(applyTitle, applyIcon);
       };
       const applyOriginal = () => set(ogName, ogIcon);
@@ -152,7 +175,11 @@ export const check = (() => {
   const op = JSON.parse(localStorage.options || '{}');
   if (typeof op.tabName === 'string' && op.tabName.startsWith('v5-')) {
     op.tabName = 'Ghost';
-    op.tabIcon = '/ghost.ico';
+    op.tabIcon = '/ghost-icon.ico?v=3';
+  }
+  // fix old gmail favicon
+  if (op.tabIcon === '/favicon.ico' || (op.tabIcon && op.tabIcon.startsWith('/favicon.ico'))) {
+    op.tabIcon = '/ghost-icon.ico?v=3';
   }
   if (!op.version) {
     localStorage.setItem('options', JSON.stringify({ ...op, version: pkg.version }));
@@ -161,7 +188,7 @@ export const check = (() => {
   }
   applyBeforeUnload(!!op.beforeUnload);
   if (window.top === window.self && op.openBlob) {
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Loading...</title><style>html,body{margin:0;height:100%;overflow:hidden}iframe{width:100%;height:100%;border:none}</style><link rel="icon" href="data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot;/>"></head><body><iframe src="${location.href}" allow="autoplay; fullscreen; pointer-lock; clipboard-read; clipboard-write" allowfullscreen></iframe><script>const apply=()=>{const op=JSON.parse(localStorage.getItem('options')||'{}');document.title=(op.tabName==='Custom'?op.customSiteTitle:op.tabName)||document.title;let favicons=document.querySelectorAll('link[rel~="icon"]');if(favicons.length===0){let icon=document.createElement('link');icon.rel='icon';document.head.appendChild(icon);favicons=[icon];}favicons.forEach(icon=>{icon.href=op.tabName==='Custom'?'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>':(op.tabIcon||'/ghost.ico');});};apply();window.addEventListener('storage',(e)=>{if(!e||e.key==='options')apply();});setInterval(apply,200);</script></body></html>`;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Loading...</title><style>html,body{margin:0;height:100%;overflow:hidden}iframe{width:100%;height:100%;border:none}</style><link rel="icon" href="data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot;/>"></head><body><iframe src="${location.href}" allow="autoplay; fullscreen; pointer-lock; clipboard-read; clipboard-write" allowfullscreen></iframe><script>const apply=()=>{const op=JSON.parse(localStorage.getItem('options')||'{}');document.title=(op.tabName==='Custom'?op.customSiteTitle:op.tabName)||document.title;let favicons=document.querySelectorAll('link[rel~="icon"]');if(favicons.length===0){let icon=document.createElement('link');icon.rel='icon';document.head.appendChild(icon);favicons=[icon];}favicons.forEach(icon=>{icon.href=op.tabName==='Custom'?'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>':(op.tabIcon||'/ghost-icon.ico?v=3');});};apply();window.addEventListener('storage',(e)=>{if(!e||e.key==='options')apply();});setInterval(apply,200);</script></body></html>`;
     const blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
     const w = open(blobUrl, '_blank');
     if (!w || w.closed) {
@@ -204,7 +231,7 @@ export const check = (() => {
             favicons = [icon];
           }
           favicons.forEach(icon => {
-            icon.href = op.tabName === 'Custom' ? 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>' : (op.tabIcon || '/ghost.ico');
+            icon.href = op.tabName === 'Custom' ? 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>' : (op.tabIcon || '/ghost-icon.ico?v=3');
           });
         };
         apply();

@@ -701,7 +701,7 @@ export default function Loader({ url, ui = true, zoom }) {
     const requestedRawUrl = String(rawUrl || '').trim();
     let displayUrl = '';
 
-    // Intercept ghost://ai then redirect to external provider if one is set
+    // intercept ghost://ai then redirect to external provider if one is set
     if (String(rawUrl).toLowerCase() === 'ghost://ai' && options.defaultAiProvider) {
       const providerUrls = {
         stoutchat: 'https://duck.ai',
@@ -1346,10 +1346,10 @@ export default function Loader({ url, ui = true, zoom }) {
     navigate('.', { replace: true, state: {} });
   }, [location.state, navigate]);
 
-  /* Route-URL → active-tab effect.
-   * IMPORTANT: `tabs` is NOT in the dependency array to prevent a cascading
-   * re-render loop (updateUrl creates a new tabs reference → effect re-fires).
-   * We read tabs from the store snapshot inside the callback instead. */
+  /* route-url  active-tab effect.
+   * important: `tabs` is not in the dependency array to prevent a cascading
+   * re-render loop (updateurl creates a new tabs reference  effect re-fires).
+   * we read tabs from the store snapshot inside the callback instead. */
   useEffect(() => {
     if (!tabsHydrated) return;
     if (!routeUrl) return;
@@ -1484,7 +1484,7 @@ export default function Loader({ url, ui = true, zoom }) {
 
     const updateGhostBrowserTabUrl = (tabId, rawUrl, config = {}) => {
       if (!tabId || !rawUrl) return false;
-      // Handle ghost://home specially — switch to tabs://new so Viewer shows home
+      // handle ghost://home specially  switch to tabs://new so viewer shows home
       if (String(rawUrl).toLowerCase() === 'ghost://home') {
         loaderStore.getState().updateUrl(tabId, 'tabs://new');
         loaderStore.getState().setIframeUrl(tabId, 'ghost://home');
@@ -1496,7 +1496,7 @@ export default function Loader({ url, ui = true, zoom }) {
         tabId,
         typeof config?.displayUrl === 'string' ? config.displayUrl.trim() : '',
       );
-      // Also set iframeUrl for ghost:// protocol URLs
+      // also set iframeurl for ghost:// protocol urls
       if (String(rawUrl).startsWith('ghost://')) {
         loaderStore.getState().setIframeUrl(tabId, rawUrl);
       }
@@ -1787,11 +1787,13 @@ export default function Loader({ url, ui = true, zoom }) {
       const action = actions[matched[0]];
       if (!action) return;
       e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation?.();
       action();
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
   }, [options, navigate]);
 
   const currentSitePolicy = useMemo(

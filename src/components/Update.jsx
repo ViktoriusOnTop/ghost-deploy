@@ -1,4 +1,4 @@
-// Idea?
+// idea?
 import { Dialog, DialogPanel, DialogTitle, Button } from '@headlessui/react';
 import { useOptions } from '/src/utils/optionsContext';
 import { useState, useEffect } from 'react';

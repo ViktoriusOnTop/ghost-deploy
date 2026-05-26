@@ -115,6 +115,6 @@ export async function fetchW() {
   });
 }
 
-// var url = await fetchW().then((r) => r);
+// var url = await fetchw().then((r) => r);
 // if (url == null) console.error('no sockets connected');
 // else console.log(url);

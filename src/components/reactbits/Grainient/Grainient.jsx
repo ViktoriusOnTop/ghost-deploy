@@ -208,7 +208,7 @@ const Grainient = ({
       try {
         container.removeChild(canvas);
       } catch {
-        // Ignore
+        // ignore
       }
     };
   }, [

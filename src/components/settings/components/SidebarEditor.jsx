@@ -38,7 +38,7 @@ export default function SidebarEditor({ open, onClose }) {
         }
     }, [open]);
 
-    // Custom Apps are stored in options.sidebarCustomApps
+    // custom apps are stored in options.sidebarcustomapps
     const sidebarCustomApps = useMemo(() => {
         const apps = Array.isArray(options.sidebarCustomApps) ? options.sidebarCustomApps : [];
         return apps.map((app, index) => ({

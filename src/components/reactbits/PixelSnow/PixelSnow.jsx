@@ -194,18 +194,18 @@ export default function PixelSnow({
   const materialRef = useRef(null);
   const resizeTimeoutRef = useRef(null);
 
-  // Memoize shader variant value
+  // cache shader var
   const variantValue = useMemo(() => {
     return variant === 'round' ? 1.0 : variant === 'snowflake' ? 2.0 : 0.0;
   }, [variant]);
 
-  // Memoize color conversion
+  // cache color conv
   const colorVector = useMemo(() => {
     const threeColor = new Color(color);
     return new Vector3(threeColor.r, threeColor.g, threeColor.b);
   }, [color]);
 
-  // Debounced resize handler
+  // debounce resize
   const handleResize = useCallback(() => {
     if (resizeTimeoutRef.current) {
       clearTimeout(resizeTimeoutRef.current);
@@ -223,7 +223,7 @@ export default function PixelSnow({
     }, 100);
   }, []);
 
-  // Visibility observer
+  // check if visible
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -239,7 +239,7 @@ export default function PixelSnow({
     return () => observer.disconnect();
   }, []);
 
-  // Main Three.js setup - only runs once
+  // main three.js setup - only runs once
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -293,7 +293,7 @@ export default function PixelSnow({
     const animate = () => {
       animationRef.current = requestAnimationFrame(animate);
 
-      // Only render if visible
+      // render only if visible
       if (isVisibleRef.current) {
         material.uniforms.uTime.value = (performance.now() - startTime) * 0.001;
         renderer.render(scene, camera);
@@ -318,9 +318,9 @@ export default function PixelSnow({
       materialRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [handleResize]); // Only recreate scene when handleResize changes
+  }, [handleResize]); // recreate only on resize
 
-  // Update material uniforms when props change
+  // update uniforms on props change
   useEffect(() => {
     const material = materialRef.current;
     if (!material) return;

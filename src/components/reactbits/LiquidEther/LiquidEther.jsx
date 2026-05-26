@@ -1044,7 +1044,7 @@ export default function LiquidEther({
 
     webgl.start();
 
-    // IntersectionObserver to pause rendering when not visible
+    // intersectionobserver to pause rendering when not visible
     const io = new IntersectionObserver(
       entries => {
         const entry = entries[0];

@@ -1,6 +1,6 @@
 import Nav from '../layouts/Nav';
 import { useState, useMemo, useEffect, useCallback, memo, lazy, Suspense } from 'react';
-import { Search, LayoutGrid, Plus, X, Hammer } from 'lucide-react';
+import { Search, LayoutGrid, Plus, X, Hammer, Wrench } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useOptions } from '/src/utils/optionsContext';
 import { showConfirm } from '/src/utils/uiDialog';
@@ -228,27 +228,98 @@ const DEVELOPER_APPS = [
   },
 ];
 
+const TOOLS_APPS = [
+  {
+    appName: 'Edit Page',
+    desc: 'General: Make the current page editable',
+    icon: '',
+    url: "javascript:document.body.contentEditable='true'; document.designMode='on'; void 0",
+    disabled: false,
+    noIcon: true,
+  },
+  {
+    appName: 'Dark Mode',
+    desc: 'General: Apply dark mode to any page',
+    icon: '',
+    url: "javascript:(function(){var style=document.createElement('style');style.innerHTML='html, body { background-color: #121212 !important; color: #ffffff !important; } * { background-color: rgba(0,0,0,0.5) !important; color: #ffffff !important; border-color: #333333 !important; }';document.head.appendChild(style);})();",
+    disabled: false,
+    noIcon: true,
+  },
+  {
+    appName: 'Asteroids',
+    desc: 'General: Play asteroids on any page',
+    icon: '',
+    url: "javascript:var s = document.createElement('script');s.type='text/javascript';document.body.appendChild(s);s.src='https://hi.kickassapp.com/kickass.js';void(0);",
+    disabled: false,
+    noIcon: true,
+  },
+  {
+    appName: 'Auto Scroll',
+    desc: 'General: Auto scroll the current page',
+    icon: '',
+    url: "javascript:(function(){var scroll=setInterval(function(){window.scrollBy(0,1);},10);})();",
+    disabled: false,
+    noIcon: true,
+  },
+  {
+    appName: 'View Source',
+    desc: 'General: View page source code',
+    icon: '',
+    url: "javascript:(function(){window.open('view-source:'+location.href)})();",
+    disabled: false,
+    noIcon: true,
+  },
+  {
+    appName: 'Edpuzzle Cheats',
+    desc: 'Cheats: Edpuzzle auto answers',
+    icon: '',
+    url: 'javascript: fetch("https://cdn.jsdelivr.net/gh/ading2210/edpuzzle-answers@latest/script.js").then(r => r.text()).then(r => eval(r))',
+    disabled: false,
+    noIcon: true,
+  },
+  {
+    appName: 'Blooket Cheats',
+    desc: 'Cheats: Blooket hack menu',
+    icon: '',
+    url: 'javascript:(async()=>{if(console.log("%c Blooket Cheats Plus %c\\n\\tBy DannyDan0167 on GitHub","color: #0bc2cf; font-size: 3rem","color: #8000ff; font-size: 1rem"),console.log("%c\\tgui.js","color: #0bc2cf; font-size: 1rem"),console.log("%c\\tStar the github repo!%c  https://github.com/Dog-tp6be/Blooket-cheats-All-hacks-Dog-tp6be","color: #ffdb00; font-size: 1rem", "color: #0088ff; font-size: 1rem"),window.location.host!=="play.blooket.com"&&window.location.host!=="dashboard.blooket.com")return alert("Please run this on blooket!");try{await eval(await(await fetch("https://raw.githubusercontent.com/Dog-tp6be/Blooket-cheats-All-hacks-Dog-tp6be/refs/heads/main/gui.js")).text())}catch(o){console.error("Error executing script:",o)}})();',
+    disabled: false,
+    noIcon: true,
+  }
+];
+
 const AppCard = memo(({ app, onClick, fallbackMap, onImgError, itemTheme, itemStyles, onDelete, options }) => {
   const [loaded, setLoaded] = useState(false);
   const isGhostIcon = app.icon && /ghost/i.test(String(app.icon));
   const hideIcon = (!isGhostIcon && !!options?.performanceMode) || !!app.noIcon;
 
+  const isJs = typeof app.url === 'string' && app.url.startsWith('javascript:');
+  const Component = isJs ? 'a' : 'div';
+  const additionalProps = isJs ? { href: app.url } : {};
+
   return (
-    <div
+    <Component
+      {...additionalProps}
       key={app.appName}
       className={clsx(
         itemStyles.app,
         itemTheme.appItemColor,
         itemTheme[`theme-${itemTheme.current || 'default'}`],
         'relative ghost-anim-card',
+        isJs && 'block',
         app.disabled ? 'disabled cursor-not-allowed' : 'cursor-pointer',
       )}
-      onClick={!app.disabled ? () => onClick(app) : undefined}
+      onClick={!app.disabled ? (e) => {
+        if (!isJs) {
+          e.preventDefault();
+          onClick(app);
+        }
+      } : undefined}
     >
       {onDelete && (
         <button
           onClick={(e) => {
             e.stopPropagation();
+            if (isJs) e.preventDefault();
             onDelete(app);
           }}
           className="absolute top-2 right-3 p-1.5 rounded-md bg-[#00000040] hover:bg-[#00000066]"
@@ -276,7 +347,7 @@ const AppCard = memo(({ app, onClick, fallbackMap, onImgError, itemTheme, itemSt
       </div>
       <p className="text-m font-semibold">{app.appName.split('').join('\u200B')}</p>
       <p className="text-sm mt-2">{(app.desc || '').split('').join('\u200B')}</p>
-    </div>
+    </Component>
   );
 });
 
@@ -314,6 +385,25 @@ const DeveloperToggleCard = memo(({ enabled, onToggle, itemTheme, itemStyles }) 
     </div>
     <p className="text-m font-semibold">Developer Apps</p>
     <p className="text-sm mt-2">Press to only view developer apps.</p>
+  </div>
+));
+
+const ToolsToggleCard = memo(({ enabled, onToggle, itemTheme, itemStyles }) => (
+  <div
+    className={clsx(
+      itemStyles.app,
+      itemTheme.appItemColor,
+      itemTheme[`theme-${itemTheme.current || 'default'}`],
+      'cursor-pointer ghost-anim-card border border-white/10',
+      enabled && 'ring-1 ring-white/40',
+    )}
+    onClick={onToggle}
+  >
+    <div className="w-20 h-20 rounded-[12px] mb-4 overflow-hidden relative bg-[#ffffff14] flex items-center justify-center">
+      <Wrench size={34} />
+    </div>
+    <p className="text-m font-semibold">Tools & Cheats</p>
+    <p className="text-sm mt-2">Press to view bookmarklets and cheats.</p>
   </div>
 ));
 
@@ -358,6 +448,7 @@ const Apps = memo(() => {
   const [page, setPage] = useState(1);
   const [fallback, setFallback] = useState({});
   const [developerOnly, setDeveloperOnly] = useState(false);
+  const [toolsOnly, setToolsOnly] = useState(false);
   const customModal = usePopupTransition(showCustomModal);
 
   const perPage = options.itemsPerPage || 50;
@@ -380,7 +471,11 @@ const Apps = memo(() => {
 
   const indexedApps = useMemo(() => visibleApps.map((a, i) => ({ ...a, __i: i })), [visibleApps]);
 
-  const sourceApps = useMemo(() => (developerOnly ? DEVELOPER_APPS : indexedApps), [developerOnly, indexedApps]);
+  const sourceApps = useMemo(() => {
+    if (developerOnly) return DEVELOPER_APPS;
+    if (toolsOnly) return TOOLS_APPS;
+    return indexedApps;
+  }, [developerOnly, toolsOnly, indexedApps]);
 
   const sortedApps = useMemo(
     () => {
@@ -573,11 +668,22 @@ const Apps = memo(() => {
       </div>
 
       <div className="flex flex-wrap justify-center pb-2">
-        {page === 1 && !q && (
+        {page === 1 && !q && !toolsOnly && (
           <DeveloperToggleCard
             enabled={developerOnly}
             onToggle={() => {
               setDeveloperOnly((prev) => !prev);
+              setPage(1);
+            }}
+            itemTheme={{ ...theme, current: options.theme || 'default' }}
+            itemStyles={styles}
+          />
+        )}
+        {page === 1 && !q && !developerOnly && (
+          <ToolsToggleCard
+            enabled={toolsOnly}
+            onToggle={() => {
+              setToolsOnly((prev) => !prev);
               setPage(1);
             }}
             itemTheme={{ ...theme, current: options.theme || 'default' }}
@@ -597,7 +703,7 @@ const Apps = memo(() => {
             options={options}
           />
         ))}
-        {!developerOnly && (
+        {!developerOnly && !toolsOnly && (
           <PlusCard
             onClick={() => setShowCustomModal(true)}
             itemTheme={{ ...theme, current: options.theme || 'default' }}

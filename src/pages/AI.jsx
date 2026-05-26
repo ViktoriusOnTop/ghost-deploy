@@ -106,7 +106,7 @@ const stripThinkingBlock = (text) => {
 };
 
 const requestAiReply = async (chatMessages) => {
-  // Read AI profile early so we can use customPersonality in the system message.
+  // read ai profile early so we can use custompersonality in the system message.
   const raw = (() => {
     try {
       return JSON.parse(localStorage.getItem('ghostAiProfile') || '{}') || {};
@@ -127,9 +127,9 @@ const requestAiReply = async (chatMessages) => {
       .slice(-20)
       .map((m) => ({ role: m.role, content: m.content })),
   ];
-  // raw was already read above for customPersonality.
+  // raw was already read above for custompersonality.
 
-  // Ghost AI now always uses user-provided provider credentials.
+  // ghost ai now always uses user-provided provider credentials.
   const key = String(raw.apiKey || '').trim();
   const provider = String(raw.provider || 'openai').trim().toLowerCase();
   const model = String(raw.model || '').trim();
@@ -150,7 +150,7 @@ const requestAiReply = async (chatMessages) => {
     }
 
   if (provider === 'anthropic') {
-      // Anthropic completion endpoint (best-effort). Uses x-api-key header.
+      // anthropic completion api
       const prompt = apiMessages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n');
       const res = await fetch('https://api.anthropic.com/v1/complete', {
         method: 'POST',
@@ -192,7 +192,7 @@ const requestAiReply = async (chatMessages) => {
       return stripThinkingBlock(String(reply));
     }
 
-  // Unsupported provider selected.
+  // unsupported provider
   throw new Error('Selected AI provider is not supported.');
 };
 
@@ -292,11 +292,11 @@ export default function AIPage() {
   useEffect(() => {
     if (!aiSettingsMounted) return;
     const onDown = (e) => {
-      // Ignore pointer events during transition lock to avoid flicker
+      // ignore pointer events to stop flicker
       if (transitionLockRef.current) return;
       if (aiSettingsRef.current?.contains(e.target)) return;
       if (buttonRef.current?.contains(e.target)) return;
-      // start close animation
+      // close anim
       closeAiSettings();
     };
     window.addEventListener('pointerdown', onDown);
@@ -307,12 +307,12 @@ export default function AIPage() {
     const now = Date.now();
     if (now - lastToggleAtRef.current < 400) return;
     lastToggleAtRef.current = now;
-    // prevent outside-click handler from immediately closing while we open
+    // prevent immediate close on open
     transitionLockRef.current = true;
     setAiSettingsMounted(true);
-    // make visible immediately to avoid mount/visible race
+    // show immediately
     setAiSettingsVisible(true);
-    // release lock after animation window
+    // release lock
     setTimeout(() => {
       transitionLockRef.current = false;
     }, 350);
@@ -322,13 +322,13 @@ export default function AIPage() {
     const now = Date.now();
     if (now - lastToggleAtRef.current < 200) return;
     lastToggleAtRef.current = now;
-    // lock transitions to prevent immediate reopen while close animation plays
+    // lock to stop immediate reopen
     transitionLockRef.current = true;
     setAiSettingsVisible(false);
-    // wait for exit animation before unmount
+    // wait for exit anim
     setTimeout(() => {
       setAiSettingsMounted(false);
-      // release lock shortly after unmount
+      // release lock
       setTimeout(() => {
         transitionLockRef.current = false;
       }, 120);
@@ -1009,7 +1009,7 @@ export default function AIPage() {
         </main>
       </div>
 
-      {/* AI Provider chooser popup */}
+      {/* ai provider chooser popup */}
       {aiProviderPopupOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4">
           <div

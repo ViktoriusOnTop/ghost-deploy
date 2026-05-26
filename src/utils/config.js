@@ -671,7 +671,7 @@ export const meta = [
     option: 'Ghost',
     value: {
       tabName: 'Ghost',
-      tabIcon: '/ghost.ico',
+      tabIcon: '/ghost-icon.ico?v=3',
     },
   },
   {

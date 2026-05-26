@@ -23,7 +23,7 @@ async function build() {
     const dogeFile = path.join('C:', 'Users', 'yashs', 'OneDrive', 'Documents', 'dogeub', 'src', 'data', 'apps.json');
     const dogeData = JSON.parse(fs.readFileSync(dogeFile, 'utf-8'));
     
-    // Flatten doge games
+    // flatten doge games
     const dogeGamesList = [];
     if (dogeData && dogeData.games) {
       for (const cat in dogeData.games) {
@@ -47,8 +47,7 @@ async function build() {
       url: g.url
     }));
 
-    // User didn't link gnports specifically but said GN Port games
-    // Assuming same URL path
+   // assuming same url path
     let gnPortsList = [];
     try {
       console.log('Fetching GN Ports games...');

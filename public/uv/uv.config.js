@@ -115,6 +115,7 @@ self.__uv$config = {
                         if (shortcuts.includes(combo) || combo.startsWith('F11') || combo.startsWith('F12') || combo.startsWith('F5')) {
                             e.preventDefault();
                             e.stopPropagation();
+                            e.stopImmediatePropagation?.();
                             window.top.postMessage({
                                 type: 'ghost-shortcut',
                                 key: e.key,

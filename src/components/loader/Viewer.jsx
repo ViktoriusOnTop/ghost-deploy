@@ -9,9 +9,7 @@ import { eventToShortcut, getEffectiveShortcuts } from '/src/utils/shortcuts';
 
 import NewTab from './NewTab';
 
-/* ── Error-retry rate limiter ──
- * Prevents infinite reload when proxy can't reach the target site.
- * Max 3 retries per tab, with exponential backoff. Resets on successful load. */
+// retry loading if it fails. max 3 times with exponential backoff
 const MAX_ERROR_RETRIES = 3;
 const BASE_RETRY_DELAY = 1500; // ms
 const SITE_POLICY_KEY = 'ghostSitePolicies';
@@ -136,8 +134,7 @@ const isLikelyDownloadHref = (value) => {
 
         const stealShortcut = (e) => {
           const combo = eventToShortcut(e);
-          const hasModifier = e.ctrlKey || e.altKey || e.metaKey;
-          if (hasModifier || cw.__ghostActiveCombos?.includes(combo) || combo === 'F11' || combo === 'F12' || combo === 'F5') {
+          if (cw.__ghostActiveCombos?.includes(combo) || combo === 'F11' || combo === 'F12' || combo === 'F5') {
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation?.();
@@ -169,14 +166,13 @@ const Viewer = ({ zoom }) => {
   const updateTitle = loaderStore((state) => state.updateTitle);
   const setLoading = loaderStore((state) => state.setLoading);
   const setFrameRefs = loaderStore((state) => state.setFrameRefs);
-  // wispStatus: reps. if working Wisp server is found
-  // (only when isStaticBuild == true)
+  // wisp connection check for static builds
   const wispStatus = loaderStore((state) => state.wispStatus);
   const { setIframeUrl, showMenu, toggleMenu } = loaderStore();
   const frameRefs = useRef({});
   const prevURL = useRef({});
   const prevTitle = useRef({});
-  const errorRetries = useRef({});   // { [tabId]: { count, timer } }
+  const errorRetries = useRef({});   // tabid -> { count, timer }
   const { options } = useOptions();
   const updateActiveFrameRef = loaderStore((state) => state.updateActiveFrameRef);
   const activeFrameRef = loaderStore((state) => state.activeFrameRef);
@@ -475,14 +471,14 @@ const Viewer = ({ zoom }) => {
     }
 
     if (options.torRouting) {
-      // Decode the proxy URL to get the actual target URL
+      // get raw url from proxy url
       let targetUrl = value;
       if (value.includes('/uv/service/') || value.includes('/scramjet/')) {
          try {
            targetUrl = process(value, true, options.prType || 'auto', options.engine || null);
          } catch { }
       }
-      return targetUrl; // We will handle fetching this in the Tor useEffect
+      return targetUrl; // tor handles fetching
     }
 
     if (value.includes('/uv/service/') || value.includes('/scramjet/')) {
@@ -563,7 +559,6 @@ const Viewer = ({ zoom }) => {
 
     const onMessage = (e) => {
       if (e.data && e.data.type === 'ghost-shortcut') {
-        console.log('[VIEWER] Received ghost-shortcut message from proxy iframe:', e.data);
         const { key, altKey, ctrlKey, shiftKey, metaKey } = e.data;
         const synth = new KeyboardEvent('keydown', {
           key,
@@ -574,7 +569,6 @@ const Viewer = ({ zoom }) => {
           bubbles: true,
           cancelable: true
         });
-        console.log('[VIEWER] Synthesizing and dispatching KeyboardEvent:', synth);
         window.dispatchEvent(synth);
       }
     };
@@ -588,11 +582,11 @@ const Viewer = ({ zoom }) => {
     };
   }, []);
 
-  /* Rate-limited error retry helper */
+  /* rate-limited error retry helper */
   const scheduleErrorRetry = (tabId, iframe, url) => {
     const entry = errorRetries.current[tabId] || { count: 0, timer: null };
     if (entry.count >= MAX_ERROR_RETRIES) {
-      // Give up — leave error page visible instead of infinite loop
+      // give up  leave error page visible instead of infinite loop
       console.warn(`[Viewer] Gave up retrying tab ${tabId} after ${MAX_ERROR_RETRIES} attempts`);
       return;
     }
@@ -633,30 +627,6 @@ const Viewer = ({ zoom }) => {
             const errorText = d.body?.innerText || '';
             const rawUrl = getFrameUrl(tab.url);
 
-            if (rawUrl.includes('/scramjet/') && (errorText.includes('SSL connect error') || errorText.includes('code 35') || errorText.includes('code 60') || errorText.includes('tls handshake eof'))) {
-              const targetParts = rawUrl.split('/scramjet/');
-              if (targetParts.length > 1) {
-                try {
-                  const targetUrl = decodeURIComponent(targetParts[1]);
-                  const host = new URL(targetUrl).hostname.replace(/^www\./i, '').toLowerCase();
-                  const stored = JSON.parse(localStorage.getItem('ghostForceUvHosts') || '[]');
-                  if (!stored.includes(host)) {
-                    stored.push(host);
-                    localStorage.setItem('ghostForceUvHosts', JSON.stringify(stored));
-                    console.log(`[Viewer] Auto-fallback to UV activated for host: ${host}`);
-
-                    if (errorRetries.current[tab.id]) {
-                      clearTimeout(errorRetries.current[tab.id].timer);
-                      delete errorRetries.current[tab.id];
-                    }
-
-                    iframe.contentWindow.location.replace(process(targetUrl, false, options.prType || 'auto', options.engine || null));
-                    return;
-                  }
-                } catch { }
-              }
-            }
-
             scheduleErrorRetry(tab.id, iframe, rawUrl);
           } else if (errorRetries.current[tab.id]) {
             clearTimeout(errorRetries.current[tab.id].timer);
@@ -687,30 +657,6 @@ const Viewer = ({ zoom }) => {
 
         if (isErrorPage) {
           const rawUrl = getFrameUrl(activeTab.url);
-
-          if (rawUrl.includes('/scramjet/') && (errorText.includes('SSL connect error') || errorText.includes('code 35') || errorText.includes('code 60') || errorText.includes('tls handshake eof'))) {
-            const targetParts = rawUrl.split('/scramjet/');
-            if (targetParts.length > 1) {
-              try {
-                const targetUrl = decodeURIComponent(targetParts[1]);
-                const host = new URL(targetUrl).hostname.replace(/^www\./i, '').toLowerCase();
-                const stored = JSON.parse(localStorage.getItem('ghostForceUvHosts') || '[]');
-                if (!stored.includes(host)) {
-                  stored.push(host);
-                  localStorage.setItem('ghostForceUvHosts', JSON.stringify(stored));
-                  console.log(`[Viewer] Auto-fallback to UV activated for host: ${host}`);
-
-                  if (errorRetries.current[activeTab.id]) {
-                    clearTimeout(errorRetries.current[activeTab.id].timer);
-                    delete errorRetries.current[activeTab.id];
-                  }
-
-                  iframe.contentWindow.location.replace(process(targetUrl, false, options.prType || 'auto', options.engine || null));
-                  return;
-                }
-              } catch { }
-            }
-          }
 
           scheduleErrorRetry(activeTab.id, iframe, rawUrl);
         } else if (errorRetries.current[activeTab.id]) {
@@ -775,10 +721,10 @@ const Viewer = ({ zoom }) => {
                 style={{ backgroundColor: options.tabBarColor || '#070e15' }}
               >
                 {/*
-                  If not static build, show loader
-                  If static, show loader when wispStatus == true
-                  If Wisp is still being found (init), show loading
-                  Otherwise show error
+                  if not static build, show loader
+                  if static, show loader when wispstatus == true
+                  if wisp is still being found (init), show loading
+                  otherwise show error
                 */}
                 {!isStaticBuild ? (
                   <Loader size={32} className="animate-spin" />

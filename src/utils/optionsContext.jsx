@@ -17,7 +17,7 @@ const DEFAULT_OPTIONS = {
   ...scramjetDefaults,
   lastThemePresetName: darkThemeDefaults.themeName || 'darkTheme',
   tabName: 'Ghost',
-  tabIcon: '/ghost.ico',
+  tabIcon: '/ghost-icon.ico?v=3',
   clkOff: false,
   hideLocation: false,
   antiClose: false,
@@ -118,7 +118,7 @@ const normalizeLegacyOptions = (stored) => {
     out.defaultMusicPlayer = 'musicplayer';
   }
 
-  // Migrate old 'stars' background name to 'StarrySky'
+  // migrate old 'stars' background name to 'starrysky'
   if (out.customAnimatedBackground === 'stars') {
     out.customAnimatedBackground = 'StarrySky';
   }
@@ -210,10 +210,10 @@ const normalizeLegacyOptions = (stored) => {
   }
 
   const legacyTitle = typeof out.tabName === 'string' && out.tabName.startsWith('v5-');
-  const legacyIcon = out.tabIcon === '/icon.svg' || out.tabIcon === '/icon.png';
+  const legacyIcon = out.tabIcon === '/icon.svg' || out.tabIcon === '/icon.png' || out.tabIcon === '/favicon.ico' || (out.tabIcon && out.tabIcon.startsWith('/favicon.ico'));
   if (legacyTitle || legacyIcon) {
-    out.tabName = 'Ghost';
-    out.tabIcon = '/ghost.ico';
+    out.tabName = out.tabName && !out.tabName.startsWith('v5-') ? out.tabName : 'Ghost';
+    out.tabIcon = '/ghost-icon.ico?v=3';
   }
 
   if (!out.shortcuts || typeof out.shortcuts !== 'object') {
@@ -322,7 +322,7 @@ export const OptionsProvider = ({ children }) => {
 
   useEffect(() => {
     import('/src/utils/utils.js').then(({ ckOff }) => ckOff());
-  }, [options.tabName, options.tabIcon, options.clkOff, options.customSiteTitle]);
+  }, [options.tabName, options.tabIcon, options.clkOff, options.customSiteTitle, options.customSiteIcon]);
 
   useEffect(() => {
     import('/src/utils/utils.js').then(({ applyBeforeUnload }) => {

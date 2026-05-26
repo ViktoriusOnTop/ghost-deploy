@@ -476,7 +476,7 @@ const InfoPanel = () => {
   );
 };
 
-// ─── Custom Theme helpers (module-level, no re-creation) ──────────────────────
+//  custom theme helpers (module-level, no re-creation) 
 
 const hsvToRgb = (h, s, v) => {
   s /= 100; v /= 100;
@@ -495,7 +495,7 @@ const hsla = (h, s, l, a) => `hsla(${Math.round(h)}, ${Math.round(cl(s, 0, 100))
 
 const generateCustomTheme = (h, s, v, mode) => {
   const isDark = mode === 'dark';
-  // Derive rough HSL lightness for accent
+  // get accent lightness
   const sv = s / 100, vv = v / 100;
   const lAcc = vv * (1 - sv / 2) * 100;
   const [rA, gA, bA] = hsvToRgb(h, s, v);
@@ -507,7 +507,7 @@ const generateCustomTheme = (h, s, v, mode) => {
     const accentFg = hsl(h, cl(s * 0.75, 20, 80), cl(lAcc + 15, 68, 93));
     const accentEnabled = hsl(h, cl(s, 30, 70), cl(lAcc * 0.4 + 20, 24, 45));
     const siteText = hsl(h, fgS, 80);
-    const p = { // palette shorthand
+    const p = { // colors
       bg5: hsl(h, bgS, 5),   bg8: hsl(h, bgS + 2, 8),  bg10: hsl(h, bgS + 2, 10),
       bg12: hsl(h, bgS + 3, 12), bg14: hsl(h, bgS + 3, 14), bg18: hsl(h, bgS + 4, 18),
       border: hsl(h, fgS, 22), muted: hsl(h, fgS - 5, 58),
@@ -578,7 +578,7 @@ const generateCustomTheme = (h, s, v, mode) => {
   }
 };
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 
 const Setting = ({ setting }) => {
   const navigate = useNavigate();
@@ -608,7 +608,7 @@ const Setting = ({ setting }) => {
   const [paddingDraft, setPaddingDraft] = useState('');
   const [radiusDraft, setRadiusDraft] = useState('');
 
-  // Custom Theme picker state
+  // theme picker state
   const [customThemeOpen, setCustomThemeOpen] = useState(false);
   const [customThemeRender, setCustomThemeRender] = useState(false);
   const [customThemeAnim, setCustomThemeAnim] = useState(false);
@@ -705,7 +705,7 @@ const Setting = ({ setting }) => {
     return () => clearTimeout(t);
   }, [historyOpen]);
 
-  // Custom Theme popup animation
+  // theme popup anim
   useEffect(() => {
     if (customThemeOpen) {
       setCustomThemeAnim(false);
@@ -721,7 +721,7 @@ const Setting = ({ setting }) => {
     return () => clearTimeout(t);
   }, [customThemeOpen]);
 
-  // Color picker drag handlers
+  // drag handlers
   const updateSV = useCallback((clientX, clientY) => {
     if (!svPickerRef.current) return;
     const rect = svPickerRef.current.getBoundingClientRect();
@@ -1377,7 +1377,7 @@ const Setting = ({ setting }) => {
       <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} />
       <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
 
-      {/* ── Custom Theme Popup ── */}
+      {/*  custom theme popup  */}
       {customThemeRender && (
         <div
           className={`fixed inset-0 z-[10000] flex items-center justify-center p-4 transition-all duration-200 ${customThemeAnim ? 'opacity-100' : 'opacity-0'}`}
@@ -1390,7 +1390,7 @@ const Setting = ({ setting }) => {
             )}
             style={{ backgroundColor: popupSurface, borderColor: popupBorderColor, color: popupTextColor }}
           >
-            {/* Header */}
+            {/* header */}
             <div className="flex items-start justify-between px-5 pt-5 pb-3">
               <div>
                 <div className="flex items-center gap-2">
@@ -1412,7 +1412,7 @@ const Setting = ({ setting }) => {
             </div>
 
             <div className="px-5 pb-5 space-y-3">
-              {/* SV Picker box */}
+              {/* sv picker box */}
               <div
                 ref={svPickerRef}
                 className="relative w-full rounded-xl overflow-hidden select-none"
@@ -1435,7 +1435,7 @@ const Setting = ({ setting }) => {
                 />
               </div>
 
-              {/* Hue strip */}
+              {/* hue strip */}
               <div
                 ref={hueStripRef}
                 className="relative w-full h-[14px] rounded-full overflow-visible select-none"
@@ -1456,7 +1456,7 @@ const Setting = ({ setting }) => {
                 />
               </div>
 
-              {/* Swatch + hex display */}
+              {/* swatch + hex display */}
               <div className="flex items-center gap-3 pt-0.5">
                 <div
                   className="w-8 h-8 rounded-lg border border-white/15 shrink-0"
@@ -1467,7 +1467,7 @@ const Setting = ({ setting }) => {
                 </code>
               </div>
 
-              {/* Apply */}
+              {/* apply */}
               <button
                 type="button"
                 onClick={() => {

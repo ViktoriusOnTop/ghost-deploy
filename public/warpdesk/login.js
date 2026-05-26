@@ -1,6 +1,4 @@
-/**
- * WarpDesk — Login Handler
- */
+// warpdesk login handler
 
 (function () {
     'use strict';
@@ -34,7 +32,7 @@
 
     localStorage.removeItem('warpdesk_session_token');
 
-    // Restore saved connection details
+    // restore saved connection details
     const savedHost = localStorage.getItem('warpdesk_saved_host');
     const savedUser = localStorage.getItem('warpdesk_saved_user');
     if (savedHost) hostUrlInput.value = savedHost;
@@ -439,13 +437,11 @@
     window.setInterval(refreshDeviceStatuses, 30000);
     window.addEventListener('resize', syncCardHeights);
 
-    /**
-     * Show an error message with a shake animation.
-     */
+    // shake error
     function showError(message) {
         errorText.textContent = message;
         errorMessage.hidden = false;
-        // Re-trigger shake animation
+        // re-trigger shake animation
         errorMessage.style.animation = 'none';
         errorMessage.offsetHeight; // force reflow
         errorMessage.style.animation = '';
@@ -462,9 +458,7 @@
         btnLoader.hidden = !loading;
     }
 
-    /**
-     * Handle login form submission.
-     */
+    // handle login
     async function handleLogin(e) {
         e.preventDefault();
         hideError();
@@ -478,12 +472,12 @@
             return;
         }
 
-        // Ensure hostUrl doesn't end with slash
+        // ensure hosturl doesnt end with slash
         if (hostUrl.endsWith('/')) {
             hostUrl = hostUrl.slice(0, -1);
         }
 
-        // Auto-add https if missing (WebRTC requires HTTPS anyway)
+        // auto-add https if missing (webrtc requires https anyway)
         if (!hostUrl.startsWith('http')) {
             hostUrl = 'https://' + hostUrl;
             hostUrlInput.value = hostUrl;
@@ -496,24 +490,24 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password }),
-                mode: 'cors', // Enable Cross-Origin requests
+                mode: 'cors', // enable cross-origin requests
             });
 
             const data = await response.json();
 
             if (data.success && data.token) {
-                // Store connection details
+                // store connection details
                 localStorage.setItem('warpdesk_host_url', hostUrl);
                 localStorage.setItem('warpdesk_session_token', data.token);
                 localStorage.setItem('warpdesk_username', username);
 
-                // Save for persistence across sessions
+                // save for persistence across sessions
                 localStorage.setItem('warpdesk_saved_host', hostUrl);
                 localStorage.setItem('warpdesk_saved_user', username);
                 const deviceInfo = await fetchDeviceInfo(hostUrl, data.token);
                 saveOrUpdateDevice(hostUrl, username, deviceInfo && deviceInfo.device_name, deviceInfo && deviceInfo.os);
 
-                // Redirect to desktop
+                // redirect to desktop
                 window.location.href = '/warpdesk/desktop.html';
             } else {
                 showError(data.error || 'Login failed. Check your credentials.');
@@ -565,6 +559,6 @@
         }
     });
 
-    // Focus password field on load
+    // focus password field on load
     passwordInput.focus();
 })();

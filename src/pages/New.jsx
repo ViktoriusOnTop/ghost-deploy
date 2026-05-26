@@ -3,7 +3,7 @@ import { useOptions } from '../utils/optionsContext';
 import Search from '../components/SearchContainer';
 import QuickLinks from '../components/QuickLinks';
 
-// Utility function for color calculation
+// utility function for color calculation
 const calc = (hex, alpha = 0.5) => {
   const [r, g, b] = hex.match(/\w\w/g).map((x) => parseInt(x, 16));
   return `rgba(${r},${g},${b},${alpha})`;
