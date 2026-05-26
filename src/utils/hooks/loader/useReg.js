@@ -150,7 +150,7 @@ export default function useReg() {
         }
       }
 
-      const backupWisp = normalizeWispEndpoint('wss://wisp.mercurywork.shop/');
+      const backupWisp = normalizeWispEndpoint('wss://notdogeeub.surge.sh/connection/');
 
       const uniqueWispCandidates = [
         manualWisp,
