@@ -56,5 +56,16 @@
       "Updated WISP server endpoints.",
       "Ghost Music now loads via iframe instead of being proxied."
     ]
+  },
+  {
+    "version": "1.9",
+    "track": "Stable",
+    "date": "2026-05-25",
+    "changes": [
+      "Codebase cleanup and bug fixes.",
+      "Fixed global keyboard shortcuts hijacking and propagation.",
+      "Disabled auto-fallback to Ultraviolet for Scramjet.",
+      "Reverted default transport back to Libcurl."
+    ]
   }
 ]
