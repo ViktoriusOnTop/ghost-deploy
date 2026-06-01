@@ -6,6 +6,7 @@ import { process, isInternalGhostTabUrl } from '/src/utils/hooks/loader/utils';
 import { useRef, useEffect, useState } from 'react';
 import { Loader } from 'lucide-react';
 import { eventToShortcut, getEffectiveShortcuts } from '/src/utils/shortcuts';
+import { showConfirm } from '/src/utils/uiDialog';
 
 import NewTab from './NewTab';
 
@@ -154,6 +155,17 @@ const isLikelyDownloadHref = (value) => {
 
         cw.addEventListener('keydown', stealShortcut, { capture: true });
         cw.document.addEventListener('keydown', stealShortcut, { capture: true });
+      }
+
+      if (!cw.__ghostMessageForwarderHooked) {
+        cw.__ghostMessageForwarderHooked = true;
+        cw.addEventListener('message', (e) => {
+          if (e.data && typeof e.data.type === 'string' && e.data.type.startsWith('ghost-')) {
+            try {
+              window.top.postMessage(e.data, '*');
+            } catch {}
+          }
+        });
       }
 
       syncFrameState(tab, iframe, true);
@@ -497,7 +509,7 @@ const Viewer = ({ zoom }) => {
         duckai: 'https://duck.ai',
         live: 'https://thetvapp.to',
         movies: 'https://www.cineby.sc',
-        anime: 'https://hianime.re',
+        anime: 'https://hianime.ms',
         browselol: 'https://browser.lol/create',
       };
       if (aliasTargets[route]) {
@@ -557,28 +569,10 @@ const Viewer = ({ zoom }) => {
   useEffect(() => {
     const onPolicyUpdate = () => setPolicyTick((n) => n + 1);
 
-    const onMessage = (e) => {
-      if (e.data && e.data.type === 'ghost-shortcut') {
-        const { key, altKey, ctrlKey, shiftKey, metaKey } = e.data;
-        const synth = new KeyboardEvent('keydown', {
-          key,
-          altKey,
-          ctrlKey,
-          shiftKey,
-          metaKey,
-          bubbles: true,
-          cancelable: true
-        });
-        window.dispatchEvent(synth);
-      }
-    };
-
     window.addEventListener('ghost-site-policies-updated', onPolicyUpdate);
-    window.addEventListener('message', onMessage);
 
     return () => {
       window.removeEventListener('ghost-site-policies-updated', onPolicyUpdate);
-      window.removeEventListener('message', onMessage);
     };
   }, []);
 
@@ -620,6 +614,12 @@ const Viewer = ({ zoom }) => {
             detail: { tabId: tab.id, frame: iframe },
           }),
         );
+
+        if ((tab.url.includes('hianime.ms') || tab.url.includes('ghost://anime')) && !localStorage.getItem('ghost-hianime-ryu-warned')) {
+          showConfirm("Don't use the RYU server for streaming. Others should be fine.", "HiAnime Notice", "Don't show this again", "OK").then((res) => {
+            if (res) localStorage.setItem('ghost-hianime-ryu-warned', '1');
+          });
+        }
 
         try {
           const d = iframe.contentWindow?.document;
@@ -742,7 +742,7 @@ const Viewer = ({ zoom }) => {
             )}
             {/* if not static, show frame. otherwise if wisp is found (and is static) show iframe,
             otherwise display error msg */}
-            {(!isStaticBuild || wispStatus) ? (
+            {wispStatus === true ? (
               <iframe
                 ref={(el) => (frameRefs.current[id] = el)}
                 src={getFrameUrl(url)}

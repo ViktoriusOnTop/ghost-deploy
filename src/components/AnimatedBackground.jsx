@@ -19,8 +19,8 @@ const AnimatedBackground = () => {
   const containerStyle = {
     position: 'fixed',
     inset: 0,
-    width: '100vw',
-    height: '100vh',
+    width: '100%',
+    height: '100%',
     overflow: 'hidden',
     isolation: 'isolate',
     contain: 'layout paint size',

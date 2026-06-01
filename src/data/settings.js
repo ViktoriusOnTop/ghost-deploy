@@ -225,17 +225,49 @@ export const customizeConfig = ({ options, updateOption, openCssEditor }) => ({
     type: 'button',
     value: options.customAnimatedBackground ? `Active: ${options.customAnimatedBackground}` : 'Open Background Editor',
     action: openCssEditor?.openBackgroundEditor,
+    disabled: !!options.customBackgroundImage,
   },
   4: {
+    name: 'Image/GIF Background',
+    desc: 'Upload a custom image or GIF as your background. Overrides Animated Background and Background Design.',
+    type: 'button-group',
+    disabled: !!options.customAnimatedBackground,
+    buttons: [
+      {
+        value: options.customBackgroundImage ? 'Change Image' : 'Upload Image',
+        action: () => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*';
+          input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                updateOption({ customBackgroundImage: ev.target.result, customAnimatedBackground: false, bgDesign: 'None' });
+              };
+              reader.readAsDataURL(file);
+            }
+          };
+          input.click();
+        },
+      },
+      ...(options.customBackgroundImage ? [{
+        value: 'Clear',
+        action: () => updateOption({ customBackgroundImage: '' }),
+      }] : []),
+    ],
+  },
+  5: {
     name: 'Background Design',
     desc: "Customize the site's background design.",
     config: designConfigForSettings,
     value: find(designConfigForSettings, (c) => c.value?.bgDesign === options.bgDesign, 0),
     type: 'select',
     action: (a) => updateOption(a),
-    disabled: !!options.customAnimatedBackground,
+    disabled: !!options.customAnimatedBackground || !!options.customBackgroundImage,
   },
-  5: {
+  6: {
     name: 'Background Transparency',
     desc: 'Set the transparency/dim of the background image or design (0-100). Lower values make it darker/dimmer.',
     value: options.bgTransparency ?? '20',
@@ -249,21 +281,21 @@ export const customizeConfig = ({ options, updateOption, openCssEditor }) => ({
       updateOption({ bgTransparency: String(val) });
     },
   },
-  6: {
+  7: {
     name: 'Gradient Text',
     desc: 'Makes sitewide headings use a gradient matching your theme.',
     value: !!options.gradientText,
     type: 'switch',
     action: (b) => setTimeout(() => updateOption({ gradientText: b }), 100),
   },
-  7: {
+  8: {
     name: 'Typography',
     desc: 'Set any Google Font name (example: Inter, Poppins, Roboto). Some fonts may not fit to elements well.',
     value: options.globalFont || 'Inter',
     type: 'input',
     action: (v) => updateOption({ globalFont: (v || 'Inter').trim() || 'Inter' }),
   },
-  8: {
+  9: {
     name: 'Navigation Scale',
     desc: 'Scale navigation bar size (logo & font) globally.',
     config: navScaleConfig,
@@ -271,7 +303,7 @@ export const customizeConfig = ({ options, updateOption, openCssEditor }) => ({
     type: 'select',
     action: (a) => updateOption(a),
   },
-  9: {
+  10: {
     name: 'Apps per Page',
     desc: 'Number of apps to show per page ("All" will show everything).',
     config: appsPerPageConfig,
@@ -279,21 +311,21 @@ export const customizeConfig = ({ options, updateOption, openCssEditor }) => ({
     type: 'select',
     action: (a) => updateOption(a),
   },
-  10: {
+  11: {
     name: 'Performance Mode',
     desc: 'Disable heavy animations and app/media icon loading for faster performance.',
     value: !!options.performanceMode,
     type: 'switch',
     action: (b) => setTimeout(() => updateOption({ performanceMode: b }), 100),
   },
-  11: {
+  12: {
     name: 'Magic Pill',
     desc: 'Enable the expanding info card on Ghost Home. When disabled, it just shows as text on the background.',
     value: !!options.magicPill,
     type: 'switch',
     action: (b) => setTimeout(() => updateOption({ magicPill: b }), 100),
   },
-  12: {
+  13: {
     name: 'Sidebar Editor',
     desc: 'Add custom apps and manage sidebar toggles.',
     type: 'button',

@@ -11,6 +11,7 @@ import { initPreload } from './utils/preload';
 import { designConfig as bgDesign } from './utils/config';
 import { applyStealthMode } from './utils/stealthMode';
 import DialogHost from './components/DialogHost';
+import GlobalShortcuts from './components/GlobalShortcuts';
 import AnimatedBackground from './components/AnimatedBackground';
 import './index.css';
 import 'nprogress/nprogress.css';
@@ -242,9 +243,9 @@ const ThemedApp = memo(() => {
       ` : ''}
 
       html {
-        background-image: ${options.customAnimatedBackground ? 'none' : finalBgImage};
-        background-size: ${bgDesignConfig.includes('url(') ? 'cover !important' : 'auto'};
-        background-repeat: ${bgDesignConfig.includes('url(') ? 'no-repeat !important' : 'repeat'};
+        background-image: ${options.customAnimatedBackground ? 'none' : options.customBackgroundImage ? `url(${options.customBackgroundImage})` : finalBgImage};
+        background-size: ${options.customBackgroundImage || bgDesignConfig.includes('url(') ? 'cover !important' : 'auto'};
+        background-repeat: ${options.customBackgroundImage || bgDesignConfig.includes('url(') ? 'no-repeat !important' : 'repeat'};
         background-position: center;
         background-attachment: fixed;
         background-color: ${options.customAnimatedBackground ? 'transparent' : (options.bgColor || '#111827')};
@@ -253,9 +254,9 @@ const ThemedApp = memo(() => {
 
       body {
         color: ${options.siteTextColor || '#a0b0c8'};
-        background-image: ${options.customAnimatedBackground ? 'none' : finalBgImage};
-        background-size: ${bgDesignConfig.includes('url(') ? 'cover !important' : options.bgDesign === 'grid' ? '24px 24px' : 'auto'};
-        background-repeat: ${bgDesignConfig.includes('url(') ? 'no-repeat !important' : 'repeat'};
+        background-image: ${options.customAnimatedBackground ? 'none' : options.customBackgroundImage ? `url(${options.customBackgroundImage})` : finalBgImage};
+        background-size: ${options.customBackgroundImage || bgDesignConfig.includes('url(') ? 'cover !important' : options.bgDesign === 'grid' ? '24px 24px' : 'auto'};
+        background-repeat: ${options.customBackgroundImage || bgDesignConfig.includes('url(') ? 'no-repeat !important' : 'repeat'};
         background-position: center;
         background-attachment: fixed;
         background-color: ${options.customAnimatedBackground ? 'transparent' : (options.bgColor || '#111827')};
@@ -320,11 +321,13 @@ const ThemedApp = memo(() => {
     resolvedCustomBg,
     options.bgTransparency,
     options.customAnimatedBackground,
+    options.customBackgroundImage,
   ]);
 
   return (
     <>
       <AnimatedBackground />
+      <GlobalShortcuts />
       <Routing pages={pages} />
       <ReturnToBrowserHint />
       <DialogHost />

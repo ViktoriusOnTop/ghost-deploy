@@ -8,7 +8,9 @@ import clsx from 'clsx';
 import Logo from '../components/Logo';
 import { memo, useMemo, useCallback } from 'react';
 
-const version = '1';
+import pkg from '../../package.json';
+
+const version = pkg.version;
 const itemSize = 16;
 
 const navItems = [

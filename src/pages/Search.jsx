@@ -262,8 +262,7 @@ export default function Loader({ url, ui = true, zoom }) {
   const [batteryInfo, setBatteryInfo] = useState({ level: null, charging: false });
   const [debugPanelPos, setDebugPanelPos] = useState({ x: 78, y: 90 });
   const [debugStats, setDebugStats] = useState({ fps: 0, cpu: 0, ram: null, connection: 'unknown' });
-  const [debugLogsOpen, setDebugLogsOpen] = useState(false);
-  const [debugLogs, setDebugLogs] = useState([]);
+
   const [musicPromptByTab, setMusicPromptByTab] = useState({});
   const [devToolsTabs, setDevToolsTabs] = useState({});
   const ghostMenuRef = useRef(null);
@@ -284,7 +283,6 @@ export default function Loader({ url, ui = true, zoom }) {
     hasPending: false,
     rafId: 0,
   });
-  const logRestoreRef = useRef(null);
   const [timeState, setTimeState] = useState(Date.now());
   const [windowHeight, setWindowHeight] = useState('100vh');
 
@@ -411,27 +409,7 @@ export default function Loader({ url, ui = true, zoom }) {
     return raw;
   };
 
-  const pushDebugLog = useCallback((level, args) => {
-    setDebugLogs((prev) => {
-      const line = {
-        id: createId(),
-        t: Date.now(),
-        level,
-        text: args
-          .map((entry) => {
-            try {
-              if (typeof entry === 'string') return entry;
-              return JSON.stringify(entry);
-            } catch {
-              return String(entry);
-            }
-          })
-          .join(' '),
-      };
-      const next = [...prev, line];
-      return next.slice(-160);
-    });
-  }, []);
+
 
   const effectiveTimezone = useMemo(() => {
     const override = String(options.timezoneOverride || '').trim();
@@ -935,7 +913,6 @@ export default function Loader({ url, ui = true, zoom }) {
 
   useEffect(() => {
     if (!options.debugMode) {
-      setDebugLogsOpen(false);
       return;
     }
 
@@ -986,63 +963,8 @@ export default function Loader({ url, ui = true, zoom }) {
     };
   }, [options.debugMode]);
 
-  useEffect(() => {
-    if (!options.debugMode) {
-      if (logRestoreRef.current) {
-        logRestoreRef.current();
-        logRestoreRef.current = null;
-      }
-      return;
-    }
 
-    if (logRestoreRef.current) return;
 
-    const original = {
-      log: console.log,
-      warn: console.warn,
-      error: console.error,
-      info: console.info,
-    };
-
-    const wrap = (level) => (...args) => {
-      pushDebugLog(level, args);
-      original[level](...args);
-    };
-
-    console.log = wrap('log');
-    console.warn = wrap('warn');
-    console.error = wrap('error');
-    console.info = wrap('info');
-
-    logRestoreRef.current = () => {
-      console.log = original.log;
-      console.warn = original.warn;
-      console.error = original.error;
-      console.info = original.info;
-    };
-
-    const onWindowError = (event) => {
-      if (event.target && (event.target.src || event.target.href)) {
-        pushDebugLog('error', [`Resource failed to load: ${event.target.src || event.target.href}`]);
-        return;
-      }
-      pushDebugLog('error', [event?.message || 'Unhandled error', event?.filename || '', event?.lineno || '']);
-    };
-    const onUnhandledRejection = (event) => {
-      pushDebugLog('error', ['Unhandled rejection', event?.reason || '']);
-    };
-    window.addEventListener('error', onWindowError, true);
-    window.addEventListener('unhandledrejection', onUnhandledRejection);
-
-    return () => {
-      window.removeEventListener('error', onWindowError, true);
-      window.removeEventListener('unhandledrejection', onUnhandledRejection);
-      if (logRestoreRef.current) {
-        logRestoreRef.current();
-        logRestoreRef.current = null;
-      }
-    };
-  }, [options.debugMode, pushDebugLog]);
 
   useEffect(() => {
     const clampPos = (x, y) => ({
@@ -1599,202 +1521,21 @@ export default function Loader({ url, ui = true, zoom }) {
     return () => window.removeEventListener('ghost-open-changelog', openChangelog);
   }, []);
 
+  // Listen for custom events dispatched by GlobalShortcuts for actions that need local React state
   useEffect(() => {
-    const shortcuts = getEffectiveShortcuts(options);
-
-    const handleKeyDown = (e) => {
-      const combo = eventToShortcut(e);
-      const matchedEntries = Object.entries(shortcuts).filter(
-        ([, cfg]) => cfg?.enabled !== false && cfg?.key === combo,
-      );
-      if (matchedEntries.length === 0) return;
-
-      const matched = matchedEntries[0];
-
-      const store = loaderStore.getState();
-      const getActiveTab = () => loaderStore.getState().tabs.find((t) => t.active);
-      const activeTab = getActiveTab();
-      if (!activeTab) return;
-
-      const setActiveByIndex = (index) => {
-        const target = store.tabs[index];
-        if (!target) return;
-        store.setActive(target.id);
-      };
-
-      const openNewTab = () => {
-        if (store.tabs.length >= 20) return;
-        const id = createId();
-        store.addTab({ title: 'New Tab', id, url: 'tabs://new' });
-        store.setActive(id);
-      };
-
-      const closeCurrentTab = () => {
-        if (activeTab.pinned) return;
-        if (store.tabs.length <= 1) {
-          if (activeTab.url !== 'tabs://new') {
-            store.updateUrl(activeTab.id, process('ghost://home', false, options.prType || 'auto', options.engine || null));
-            store.updateTitle(activeTab.id, 'New Tab');
-          }
-          return;
-        }
-        store.setLastActive(activeTab.id);
-        store.removeTab(activeTab.id);
-      };
-
-      const duplicateCurrentTab = () => {
-        const current = getActiveTab();
-        if (!current) return;
-        if (store.tabs.length >= 20) return;
-        const id = createId();
-        store.addTab({ title: current.title || 'New Tab', id, url: current.url || 'tabs://new' });
-        store.setActive(id);
-      };
-
-      const nextTab = () => {
-        const fresh = loaderStore.getState();
-        const idx = fresh.tabs.findIndex((t) => t.active);
-        setActiveByIndex((idx + 1) % fresh.tabs.length);
-      };
-      const previousTab = () => {
-        const fresh = loaderStore.getState();
-        const idx = fresh.tabs.findIndex((t) => t.active);
-        setActiveByIndex((idx - 1 + fresh.tabs.length) % fresh.tabs.length);
-      };
-
-      const pinToggle = () => {
-        const current = getActiveTab();
-        if (!current) return;
-        loaderStore.setState((state) => ({
-          tabs: state.tabs.map((t) => (t.id === current.id ? { ...t, pinned: !t.pinned } : t)),
-        }));
-      };
-
-      const hardReload = () => {
-        const current = getActiveTab();
-        if (!current?.url || current.url === 'tabs://new') return;
-        const decoded = process(current.url, true, options.prType || 'auto', options.engine || null);
-        const sep = decoded.includes('?') ? '&' : '?';
-        const next = `${decoded}${sep}_=${Date.now()}`;
-        store.updateUrl(current.id, process(next, false, options.prType || 'auto', options.engine || null), false);
-      };
-
-      const focusAddressBar = () => {
-        const input = document.getElementById('ghost-omnibox-input') || document.querySelector('input[data-ghost-omnibox="1"]');
-        input?.focus();
-        input?.select?.();
-      };
-
-      const zoomIn = () => {
-        const current = getActiveTab();
-        if (!current) return;
-        const currentZoom = store.zoomLevels?.[current.id] || 100;
-        const frame = getActiveFrame(store, current);
-        store.setZoom(current.id, Math.min(currentZoom + 10, 200), { current: frame });
-      };
-      const zoomOut = () => {
-        const current = getActiveTab();
-        if (!current) return;
-        const currentZoom = store.zoomLevels?.[current.id] || 100;
-        const frame = getActiveFrame(store, current);
-        store.setZoom(current.id, Math.max(currentZoom - 10, 50), { current: frame });
-      };
-
-      const openHistory = () => openProxyHistoryPopup();
-
-      const openBookmarks = () => {
-        window.dispatchEvent(new Event('ghost-open-bookmarks'));
-      };
-
-      const bookmarkCurrentPage = () => {
-        const currentTab = getActiveTab();
-        if (!currentTab?.url || currentTab.url === 'tabs://new') return;
-        const currentFrameUrl = store.iframeUrls?.[currentTab.id] || '';
-        if (isInternalGhostTabUrl(currentTab.url, currentFrameUrl)) return;
-        const decoded = process(currentTab.url, true, options.prType || 'auto', options.engine || null);
-        const currentBookmarks = options.bookmarks || [];
-        const next = [
-          {
-            id: createId(),
-            name: currentTab.title || 'Saved Page',
-            url: decoded,
-            icon: null,
-          },
-          ...currentBookmarks,
-        ];
-        updateOption({ bookmarks: next });
-      };
-
-      const actions = {
-        newTab: openNewTab,
-        closeTab: closeCurrentTab,
-        reopenClosedTab: () => store.reopenClosedTab(),
-        duplicateTab: duplicateCurrentTab,
-        nextTab,
-        previousTab,
-        pinTab: pinToggle,
-        goBack: () => store.goBack(activeTab.id),
-        goForward: () => store.goForward(activeTab.id),
-        reload: () => store.refreshTab(activeTab.id),
-        reloadF5: () => store.refreshTab(activeTab.id),
-        hardReload,
-        focusAddressBar,
-        goHome: () => {
-          const current = getActiveTab();
-          if (!current) return;
-          const homeUrl = process('ghost://home', false, options.prType || 'auto', options.engine || null);
-          store.updateUrl(current.id, homeUrl);
-          store.setIframeUrl(current.id, 'ghost://home');
-        },
-        toggleDevToolsF12: () => toggleDevToolsForTab(activeTab.id, getActiveFrame(store, activeTab)),
-        toggleDevToolsAlt: () => toggleDevToolsForTab(activeTab.id, getActiveFrame(store, activeTab)),
-        zoomIn,
-        zoomOut,
-        zoomReset: () => {
-          const current = getActiveTab();
-          if (!current) return;
-          const frame = getActiveFrame(store, current);
-          store.resetZoom(current.id, { current: frame });
-        },
-        toggleFullscreen: () => {
-          const current = getActiveTab();
-          if (!current) return;
-          getActiveFrame(store, current)?.requestFullscreen?.();
-        },
-        openSettings: () => {
-          if (store.tabs.length >= 20) return;
-          const id = createId();
-          const settingsUrl = process('ghost://settings', false, options.prType || 'auto', options.engine || null);
-          store.addTab({ title: 'Ghost Settings', id, url: settingsUrl });
-          store.setIframeUrl(id, 'ghost://settings');
-          store.setActive(id);
-        },
-        openHistory,
-        openBookmarks,
-        bookmarkCurrentPage,
-        tab1: () => setActiveByIndex(0),
-        tab2: () => setActiveByIndex(1),
-        tab3: () => setActiveByIndex(2),
-        tab4: () => setActiveByIndex(3),
-        tab5: () => setActiveByIndex(4),
-        tab6: () => setActiveByIndex(5),
-        tab7: () => setActiveByIndex(6),
-        tab8: () => setActiveByIndex(7),
-        tab9: () => setActiveByIndex(8),
-        tab10: () => setActiveByIndex(9),
-      };
-
-      const action = actions[matched[0]];
-      if (!action) return;
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation?.();
-      action();
+    const handleToggleDevtools = (e) => {
+      const { tabId, frame } = e.detail || {};
+      if (tabId) toggleDevToolsForTab(tabId, frame);
     };
+    const handleOpenHistory = () => openProxyHistoryPopup();
 
-    window.addEventListener('keydown', handleKeyDown, { capture: true });
-    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
-  }, [options, navigate]);
+    window.addEventListener('ghost-toggle-devtools', handleToggleDevtools);
+    window.addEventListener('ghost-open-history', handleOpenHistory);
+    return () => {
+      window.removeEventListener('ghost-toggle-devtools', handleToggleDevtools);
+      window.removeEventListener('ghost-open-history', handleOpenHistory);
+    };
+  }, []);
 
   const currentSitePolicy = useMemo(
     () => getCurrentSitePolicy(),
@@ -1856,10 +1597,12 @@ export default function Loader({ url, ui = true, zoom }) {
                 <div className="px-2.5 py-1.5 mb-1 rounded-lg border border-white/10" style={{ backgroundColor: ghostMenuCardBg }}>
                   <div className="text-[11px] font-semibold tracking-wide text-white/90 flex items-center justify-between">
                     <span>{menuTimeLabel}</span>
-                    <span className="inline-flex items-center gap-1 opacity-85">
-                      <Battery size={12} />
-                      {Number.isFinite(batteryInfo.level) ? `${batteryInfo.level}%` : '--'}
-                    </span>
+                    {Number.isFinite(batteryInfo.level) && (
+                      <span className="inline-flex items-center gap-1 opacity-85">
+                        <Battery size={12} />
+                        {batteryInfo.level}%
+                      </span>
+                    )}
                   </div>
                   <div className="mt-1 flex items-center justify-between text-[11px] text-white/80">
                     <span className="truncate max-w-[7.2rem]">{options.hideLocation === true ? 'Location Hidden' : (ipMeta.city || 'Location')}</span>
@@ -2472,54 +2215,7 @@ export default function Loader({ url, ui = true, zoom }) {
         )
       }
 
-      {
-        ui && debugLogsOpen && (
-          <div className="fixed inset-0 z-[10005] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/55" onClick={() => setDebugLogsOpen(false)} />
-            <div
-              className="relative w-full max-w-6xl h-[78dvh] rounded-xl border border-white/15 shadow-2xl overflow-hidden"
-              style={{ backgroundColor: popupSurface }}
-            >
-              <div className="h-12 px-4 border-b border-white/10 flex items-center justify-between">
-                <h3 className="text-base font-semibold">Console Logs</h3>
-                <div className="flex items-center gap-2 pt-[1px]">
-                  <button
-                    type="button"
-                    className="h-8 px-2.5 rounded-md border hover:brightness-110 text-xs"
-                    style={{ backgroundColor: popupSecondaryBg, borderColor: popupSecondaryBorder }}
-                    onClick={() => setDebugLogs([])}
-                  >
-                    Clear
-                  </button>
-                  <button
-                    type="button"
-                    className="h-8 px-2.5 rounded-md border hover:brightness-110 text-xs"
-                    style={{ backgroundColor: popupSecondaryBg, borderColor: popupSecondaryBorder }}
-                    onClick={() => setDebugLogsOpen(false)}
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-              <div
-                className="h-[calc(78dvh-3rem)] overflow-y-auto p-3 space-y-1 text-xs font-mono"
-                style={{ backgroundColor: popupInputBg }}
-              >
-                {debugLogs.length === 0 && <p className="opacity-70">No logs yet.</p>}
-                {debugLogs.map((log) => (
-                  <div key={log.id} className="break-words">
-                    <span className="opacity-70">[{new Date(log.t).toLocaleTimeString()}] </span>
-                    <span className={log.level === 'error' ? 'text-red-300' : log.level === 'warn' ? 'text-yellow-200' : 'text-blue-200'}>
-                      {log.level.toUpperCase()}
-                    </span>
-                    <span>: {log.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )
-      }
+
 
       {
         ui && options.debugMode && (
@@ -2571,15 +2267,7 @@ export default function Loader({ url, ui = true, zoom }) {
               <div>Connection Speed: {debugStats.connection}</div>
             </div>
 
-            <div className="mt-2 flex items-center justify-between">
-              <button
-                type="button"
-                className="h-7 px-2 rounded border border-white/20 hover:bg-black/15"
-                onClick={() => setDebugLogsOpen((prev) => !prev)}
-              >
-                View Console Logs
-              </button>
-            </div>
+
           </div>
         )
       }

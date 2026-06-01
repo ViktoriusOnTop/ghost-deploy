@@ -6,7 +6,7 @@ import store from './useLoaderStore';
 
 export default function useReg() {
   const { options } = useOptions();
-  const defaultWispEndpoint = 'wss://doge.studyeurope.edu.eu.org/connection/';
+  const defaultWispEndpoint = 'wss://ashburn.edisonlearningcenter.me/connection';
   const sws = [{ path: '/uv/ghost-sw.js', scope: '/uv/' }, { path: '/s_sw.js', scope: '/scramjet/' }];
   const setWispStatus = store((s) => s.setWispStatus);
 
@@ -66,13 +66,14 @@ export default function useReg() {
             html: `
             <script>
                 (function() {
-                    if (window === window.parent) return;
                     let shortcuts = ["Alt+T", "Alt+W", "Alt+Shift+T", "Alt+D", "Alt+R", "F5", "F12", "F11", "Alt+L"];
                     window.addEventListener('message', (e) => {
                         if (e.data && e.data.type === 'ghost-update-shortcuts') shortcuts = e.data.shortcuts;
                     });
-                const stealShortcut = (e) => {
+                    try { window.top.postMessage({ type: 'ghost-request-shortcuts' }, '*'); } catch {}
+                    const stealShortcut = (e) => {
                         let key = e.key;
+                        if (!key) return;
                         if (key === ' ' || key === 'Spacebar') key = 'Space';
                         if (key.length === 1) key = key.toUpperCase();
                         const out = [];
@@ -87,6 +88,7 @@ export default function useReg() {
                           e.preventDefault();
                           e.stopPropagation();
                           e.stopImmediatePropagation?.();
+                          try {
                             window.top.postMessage({
                                 type: 'ghost-shortcut',
                                 key: e.key,
@@ -95,6 +97,7 @@ export default function useReg() {
                                 shiftKey: e.shiftKey,
                                 metaKey: e.metaKey
                             }, '*');
+                          } catch {}
                         }
                       };
                       window.addEventListener('keydown', stealShortcut, { capture: true });
@@ -150,14 +153,11 @@ export default function useReg() {
         }
       }
 
-      const backupWisp = normalizeWispEndpoint('wss://notdogeeub.surge.sh/connection/');
-
       const uniqueWispCandidates = [
         manualWisp,
         discoveredWisp,
         localOriginWisp,
         defaultWisp,
-        backupWisp,
       ].filter((candidate, index, arr) => candidate && !isInvalidWisp(candidate) && arr.indexOf(candidate) === index);
 
       const wispUrl = uniqueWispCandidates[0] || null;

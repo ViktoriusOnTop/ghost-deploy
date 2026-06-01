@@ -21,12 +21,14 @@ export function showAlert(message, title = 'Notice') {
   });
 }
 
-export function showConfirm(message, title = 'Confirm') {
+export function showConfirm(message, title = 'Confirm', okText = 'OK', cancelText = 'Cancel') {
   return new Promise((resolve) => {
     const ok = dispatchDialog({
       type: 'confirm',
       title,
       message,
+      okText,
+      cancelText,
       resolve,
     });
 

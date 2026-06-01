@@ -67,5 +67,16 @@
       "Disabled auto-fallback to Ultraviolet for Scramjet.",
       "Reverted default transport back to Libcurl."
     ]
+  },
+  {
+    "version": "1.9.5",
+    "track": "Stable",
+    "date": "2026-06-01",
+    "changes": [
+      "Universally fixed global keyboard shortcuts; keystroke interception now works seamlessly across all pages.",
+      "Fixed Wisp server fallback routing; added strict blocking on connection failure to completely prevent CORS/IP leaks to local network.",
+      "Updated Anime discover source to HiAnime (https://hianime.ms) and implemented a warning popup advising against using the RYU server.",
+      "Added customizable Image and GIF Background settings supporting all image types & GIF files."
+    ]
   }
 ]

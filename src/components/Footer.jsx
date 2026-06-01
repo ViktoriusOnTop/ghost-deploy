@@ -6,7 +6,7 @@ import { useOptions } from '/src/utils/optionsContext';
 import changelogEntries from '/src/data/changelog.json';
 
 const Footer = memo(() => {
-  const defaultWispEndpoint = 'wss://doge.studyeurope.edu.eu.org/connection/';
+const defaultWispEndpoint = 'wss://ashburn.edisonlearningcenter.me/connection';
   const { options } = useOptions();
   const navigate = useNavigate();
   const location = useLocation();
@@ -211,7 +211,7 @@ const Footer = memo(() => {
     : 'rounded-md border border-transparent bg-transparent';
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[120] flex items-end justify-between px-2 pb-2 pointer-events-none">
+    <div className={clsx("fixed bottom-0 left-0 right-0 z-[120] items-end justify-between px-2 pb-2 pointer-events-none", inGhostBrowserMode ? "hidden md:flex" : "flex")}>
       <div className={clsx(
         'pointer-events-auto px-3 py-2 text-sm flex items-center gap-3 ml-14',
         footerCardClass,

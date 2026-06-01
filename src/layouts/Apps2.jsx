@@ -1438,8 +1438,8 @@ const TV_APPS = [
   {
     appName: 'Anime',
     desc: 'Watch anime shows and movies',
-    icon: 'https://www.google.com/s2/favicons?sz=128&domain=https://hianime.re',
-    url: 'https://hianime.re',
+    icon: 'https://www.google.com/s2/favicons?sz=128&domain=https://hianime.ms',
+    url: 'https://hianime.ms',
   },
   {
     appName: 'General Movies/TV',

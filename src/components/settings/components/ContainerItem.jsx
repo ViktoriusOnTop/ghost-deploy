@@ -23,6 +23,7 @@ const SettingsContainerItem = ({
   min,
   max,
   step,
+  buttons,
 }) => {
   const { options } = useOptions();
   const hasDisabledAction = disabled && typeof disabledAction === 'function';
@@ -69,6 +70,13 @@ const SettingsContainerItem = ({
             />
           )}
           {type === 'button' && <Button action={action} value={value} />}
+          {type === 'button-group' && buttons && (
+            <div className="flex gap-2">
+              {buttons.map((btn, i) => (
+                <Button key={i} action={btn.action} value={btn.value} />
+              ))}
+            </div>
+          )}
           {type === 'slider' && (
             <input
               type="range"

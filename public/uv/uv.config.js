@@ -100,8 +100,10 @@ self.__uv$config = {
                     window.addEventListener('message', (e) => {
                         if (e.data && e.data.type === 'ghost-update-shortcuts') shortcuts = e.data.shortcuts;
                     });
-                    window.addEventListener('keydown', (e) => {
+                    try { window.top.postMessage({ type: 'ghost-request-shortcuts' }, '*'); } catch {}
+                    const stealShortcut = (e) => {
                         let key = e.key;
+                        if (!key) return;
                         if (key === ' ' || key === 'Spacebar') key = 'Space';
                         if (key.length === 1) key = key.toUpperCase();
                         const out = [];
@@ -116,16 +118,20 @@ self.__uv$config = {
                             e.preventDefault();
                             e.stopPropagation();
                             e.stopImmediatePropagation?.();
-                            window.top.postMessage({
-                                type: 'ghost-shortcut',
-                                key: e.key,
-                                altKey: e.altKey,
-                                ctrlKey: e.ctrlKey,
-                                shiftKey: e.shiftKey,
-                                metaKey: e.metaKey
-                            }, '*');
+                            try {
+                                window.top.postMessage({
+                                    type: 'ghost-shortcut',
+                                    key: e.key,
+                                    altKey: e.altKey,
+                                    ctrlKey: e.ctrlKey,
+                                    shiftKey: e.shiftKey,
+                                    metaKey: e.metaKey
+                                }, '*');
+                            } catch {}
                         }
-                    }, { capture: true });
+                    };
+                    window.addEventListener('keydown', stealShortcut, { capture: true });
+                    document.addEventListener('keydown', stealShortcut, { capture: true });
                 })();
             </script>
             `

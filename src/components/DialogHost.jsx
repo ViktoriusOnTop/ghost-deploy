@@ -59,7 +59,7 @@ const DialogHost = () => {
               className="h-9 px-4 rounded-md border hover:brightness-110"
               style={{ backgroundColor: secondaryBg, borderColor: secondaryBorder, color: textColor }}
             >
-              Cancel
+              {dialog.cancelText || 'Cancel'}
             </button>
           )}
           <button
@@ -67,7 +67,7 @@ const DialogHost = () => {
             className="h-9 px-4 rounded-md border border-transparent hover:brightness-110"
             style={{ backgroundColor: primaryBg, color: primaryText }}
           >
-            OK
+            {dialog.okText || 'OK'}
           </button>
         </div>
       </div>
